@@ -67,7 +67,8 @@ sub() { # sub <token> <value>
   for f in "${FILES[@]}"; do
     [ -f "$f" ] || continue
     tmp="$(mktemp)"
-    sed "s|{{$token}}|$value|g" "$f" > "$tmp" && mv "$tmp" "$f"
+    # Write back into the original file so its permissions (e.g. +x) are kept.
+    sed "s|{{$token}}|$value|g" "$f" > "$tmp" && cat "$tmp" > "$f" && rm -f "$tmp"
   done
 }
 sub MODULE_NAME      "$MODULE_NAME"
@@ -83,6 +84,7 @@ sub INSTALL_PROFILE  "$INSTALL_PROFILE"
 sub COMPOSER_PROJECT "$COMPOSER_PROJECT"
 
 rm -f TEMPLATE.md
+chmod +x scripts/setup.sh scripts/install-drupal 2>/dev/null || true
 ok "Tokens applied ($FLAVOUR, Drupal $VERSION)."
 info "Removing initialiser (scripts/init.sh)..."
 rm -f scripts/init.sh
