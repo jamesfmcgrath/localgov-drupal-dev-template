@@ -11,8 +11,27 @@ permissions:
   contents: read
 
 jobs:
+  # Skip everything on the bare template (no composer.json until a project is
+  # scaffolded from it), so the template repo does not show a failing CI run.
+  guard:
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        run: |
+          if [ -f composer.json ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false (bare template, nothing to test)"
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
   php:
     name: PHP lint, static analysis, tests
+    needs: guard
+    if: needs.guard.outputs.run == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -59,6 +78,8 @@ jobs:
 
   prettier:
     name: Prettier
+    needs: guard
+    if: needs.guard.outputs.run == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
