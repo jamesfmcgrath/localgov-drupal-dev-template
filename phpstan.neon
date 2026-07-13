@@ -1,0 +1,12 @@
+includes:
+  - vendor/mglaman/phpstan-drupal/extension.neon
+  - vendor/mglaman/phpstan-drupal/rules.neon
+  - vendor/phpstan/phpstan-deprecation-rules/rules.neon
+
+parameters:
+  # Start conservative; raise the level as the module hardens.
+  level: 2
+  paths:
+    - {{MODULE_PATH}}
+  drupal:
+    drupalRoot: web

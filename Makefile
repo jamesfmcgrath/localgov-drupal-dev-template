@@ -4,7 +4,7 @@
 ##
 
 .PHONY: help start stop restart open logs si install enable cr \
-        test lint lint-fix stan check \
+        test lint lint-fix stan check format format-check \
         mod-log mod-status mod-fetch mod-branch tag switch mr
 
 MODULE = {{MODULE_PATH}}
@@ -61,6 +61,12 @@ stan: ## Run PHPStan static analysis
 	ddev exec vendor/bin/phpstan analyse $(MODULE)
 
 check: lint stan test ## Run all quality checks (lint + stan + test)
+
+format: ## Format front-end assets with Prettier (CSS/JS/JSON/YAML/MD)
+	ddev exec npx prettier --write "$(MODULE)/**/*.{css,js,json,yml,yaml,md}"
+
+format-check: ## Check Prettier formatting without writing
+	ddev exec npx prettier --check "$(MODULE)/**/*.{css,js,json,yml,yaml,md}"
 
 ## == Maintainer (module git) ==================================================
 

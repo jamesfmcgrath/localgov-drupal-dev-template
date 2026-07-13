@@ -5,9 +5,10 @@ A starting point for working locally on a Drupal 10/11 module or site, with Clau
 ## What you get
 
 - Claude Code + Cursor agent resources installed reproducibly via [`agr`](https://github.com/kasperjunge/agent-resources): `drupal-expert`, `ddev-expert`, and `drupal-localgov` skills, plus the `drupal-reviewer` agent.
-- Written coding and review standards shared across Claude (`CLAUDE.md`) and Cursor (`.cursorrules`).
-- A one-shot `scripts/setup.sh` that installs the agent resources, wires `.claude/settings.local.json`, and can clone your target module into place.
-- A `scripts/init.sh` that turns this template into your project by filling in a handful of tokens.
+- Shared coding and review standards across Claude (`CLAUDE.md`) and Cursor (`.cursorrules`).
+- A DDEV config and a one-command `scripts/setup.sh` that starts DDEV, scaffolds a Drupal project (LocalGov or vanilla, chosen at init), installs the site, adds dev tooling, and enables your module.
+- PHP tooling wired to the Makefile: PHPCS (Drupal, DrupalPractice), PHPStan (phpstan-drupal), PHPUnit, plus Prettier for front-end assets.
+- A `scripts/init.sh` that turns the template into your project by filling in a handful of tokens.
 
 ## Requirements
 
@@ -33,23 +34,17 @@ A starting point for working locally on a Drupal 10/11 module or site, with Clau
    ./scripts/init.sh
    ```
 
-   It fills in the module name, DDEV site, module git URL, and client across every file, then removes itself.
-3. Run the environment setup:
+   It asks for the module name and path, DDEV site, client, skill fork, and the Drupal flavour (`localgov` or `vanilla`) and version (`11` or `10`). It tokenises every file, then removes itself.
+3. Spin the whole environment up with one command:
 
    ```bash
    ./scripts/setup.sh
    ```
 
-4. Install the Drupal site, choosing a profile when prompted:
+   This installs the agent resources, starts DDEV, scaffolds and installs the Drupal site for your chosen flavour, adds the dev tooling (PHPCS, PHPStan, PHPUnit, Prettier), clones your module if you gave a repo URL, and enables it. Use `--skip-install` to stop before installing the site.
+4. Start coding: `ddev launch` to open the site, `ddev drush uli` for a login link, and open the project in Claude Code or Cursor. Run `make help` for the task list.
 
-   ```bash
-   ./scripts/install-drupal            # interactive profile menu
-   ./scripts/install-drupal localgov   # or pass a profile directly
-   ```
-
-   Profiles: Standard, Umami, LocalGov, LocalGov (with Demo Content), LocalGov Microsites, LocalGov (with Elections). It runs `ddev drush si`, exports config, clears caches, commits `config/` if present, and prints a one-time login link.
-
-5. Start work: `ddev start` if not already running, then open the project in Claude Code or Cursor.
+To reinstall or switch profile later, run `./scripts/install-drupal` (interactive menu) or `./scripts/install-drupal localgov` (direct).
 
 ## Tokens
 
@@ -66,6 +61,8 @@ A starting point for working locally on a Drupal 10/11 module or site, with Clau
 | `{{CLIENT}}` | `Cumberland Council bus timetables` |
 | `{{SKILL_FORK}}` | `jamesfmcgrath` |
 
+From your flavour/version answers, `init.sh` also derives `{{DRUPAL_TYPE}}` (DDEV type, e.g. `drupal11`), `{{COMPOSER_PROJECT}}` (e.g. `localgovdrupal/localgov-project`), and `{{INSTALL_PROFILE}}` (e.g. `localgov`).
+
 ## Common commands
 
 A `Makefile` wraps the everyday tasks (run `make help` for the full list):
@@ -79,6 +76,7 @@ make enable        # Enable the module
 make cr            # Clear caches
 make test          # PHPUnit (also lint / lint-fix / stan)
 make check         # lint + stan + test
+make format        # Prettier format front-end assets (also format-check)
 make mod-status    # Module git status (also mod-log / mod-fetch / mod-branch)
 make switch BRANCH=1.0.x     # also: make mr MR=123, make tag VERSION=1.0.0-alpha1
 ```

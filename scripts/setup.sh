@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# {{DDEV_NAME}}, one-shot dev environment setup.
+# {{DDEV_NAME}} - one-command dev environment spin-up.
 # Run from the repo root: ./scripts/setup.sh
-# Re-runnable. Flags: --force-reviewer (re-fetch drupal-reviewer even if present)
+# Flags:
+#   --force-reviewer   re-fetch drupal-reviewer even if present
+#   --skip-install     scaffold + tooling only, do not install the Drupal site
 set -euo pipefail
 
 BOLD="\033[1m"; GREEN="\033[32m"; YELLOW="\033[33m"; RED="\033[31m"; RESET="\033[0m"
@@ -12,15 +14,22 @@ error()   { echo -e "${RED}xx $*${RESET}"; exit 1; }
 
 MODULE_REPO="{{MODULE_REPO}}"
 MODULE_PATH="{{MODULE_PATH}}"
+MODULE_NAME="{{MODULE_NAME}}"
 SKILL_FORK="{{SKILL_FORK}}"
-# Pin drupal-reviewer to a tag/commit for reproducibility; "main" tracks latest.
+COMPOSER_PROJECT="{{COMPOSER_PROJECT}}"
+INSTALL_PROFILE="{{INSTALL_PROFILE}}"
 REVIEWER_REF="main"
 REVIEWER_URL="https://raw.githubusercontent.com/madsnorgaard/drupal-agent-resources/${REVIEWER_REF}/.claude/agents/drupal-reviewer.md"
 
-FORCE_REVIEWER=0
-[ "${1:-}" = "--force-reviewer" ] && FORCE_REVIEWER=1
+FORCE_REVIEWER=0; SKIP_INSTALL=0
+for a in "$@"; do
+  case "$a" in
+    --force-reviewer) FORCE_REVIEWER=1 ;;
+    --skip-install)   SKIP_INSTALL=1 ;;
+  esac
+done
 
-echo ""; echo -e "${BOLD}=== {{DDEV_NAME}} dev environment setup ===${RESET}"; echo ""
+echo ""; echo -e "${BOLD}=== {{DDEV_NAME}} setup ===${RESET}"; echo ""
 
 # --- Prerequisites ---
 info "Checking prerequisites..."
@@ -31,33 +40,30 @@ success "DDEV: $(ddev version | head -1)"
 # --- Agent resources (skills) ---
 info "Installing Claude Code / Cursor skills via agr..."
 if command -v agr &>/dev/null; then
-  # Prefer the lockfile so every clone gets identical, pinned skills.
   if [ -f "agr.lock" ]; then
-    agr sync
-    success "Skills installed from agr.lock (agr sync)."
+    agr sync && success "Skills installed from agr.lock (agr sync)."
   else
     agr add madsnorgaard/drupal-agent-resources/drupal-expert --overwrite
     agr add madsnorgaard/drupal-agent-resources/ddev-expert --overwrite
     agr add "${SKILL_FORK}/drupal-agent-resources/drupal-localgov" --overwrite
-    success "Skills installed and locked (drupal-expert, ddev-expert, drupal-localgov)."
+    success "Skills installed (drupal-expert, ddev-expert, drupal-localgov)."
   fi
 else
   warn "agr not found, skipping skills."
   warn "Install uv (https://docs.astral.sh/uv/), then: uv tool install agr && agr sync"
 fi
 
-# --- drupal-reviewer agent ---
-# The tracked copy is canonical; only fetch when missing (or --force-reviewer).
+# --- drupal-reviewer agent (tracked copy is canonical) ---
 info "Ensuring drupal-reviewer agent..."
 mkdir -p .claude/agents
 if [ -f ".claude/agents/drupal-reviewer.md" ] && [ "$FORCE_REVIEWER" -eq 0 ]; then
-  success "drupal-reviewer already present (tracked copy kept). Use --force-reviewer to refresh."
+  success "drupal-reviewer already present (tracked copy kept)."
 elif command -v curl &>/dev/null; then
   curl -fsSL -o .claude/agents/drupal-reviewer.md "${REVIEWER_URL}" \
     && success "drupal-reviewer fetched (${REVIEWER_REF})." \
     || warn "Could not fetch drupal-reviewer. Save manually from ${REVIEWER_URL}"
 else
-  warn "curl not found, save drupal-reviewer manually from ${REVIEWER_URL}"
+  warn "curl not found. Save drupal-reviewer manually from ${REVIEWER_URL}"
 fi
 
 # --- Claude settings.local.json ---
@@ -65,17 +71,60 @@ if [ ! -f ".claude/settings.local.json" ] && [ -f ".claude/settings.local.json.d
   info "Creating .claude/settings.local.json from dist..."
   sed "s|<absolute-path-to-repo>|$(pwd)|g" .claude/settings.local.json.dist > .claude/settings.local.json
   success ".claude/settings.local.json created."
-else
-  success ".claude/settings.local.json present or no dist, skipping."
 fi
 
-# --- Optional: clone the target module into place ---
+# --- DDEV ---
+info "Starting DDEV..."
+ddev start
+success "DDEV running."
+
+# --- Drupal codebase (scaffold without clobbering template files) ---
+if [ ! -f "composer.json" ]; then
+  info "Scaffolding Drupal project: ${COMPOSER_PROJECT}"
+  ddev exec "rm -rf /tmp/scaffold && composer create-project ${COMPOSER_PROJECT} /tmp/scaffold --no-install --no-interaction"
+  # cp -n preserves the template's own files (CLAUDE.md, Makefile, scripts, etc.).
+  ddev exec "cp -rn /tmp/scaffold/. /var/www/html/ && rm -rf /tmp/scaffold"
+  success "Project scaffolded."
+fi
+info "Installing Composer dependencies..."
+ddev composer install
+success "Dependencies installed."
+
+# --- Dev tooling (lint / static analysis / tests) ---
+info "Adding PHP dev tooling..."
+ddev composer require --dev --no-interaction \
+  drupal/core-dev drupal/coder mglaman/phpstan-drupal \
+  phpstan/phpstan phpstan/phpstan-deprecation-rules \
+  || warn "Some dev dependencies failed to install; add them manually."
+ddev composer config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true 2>/dev/null || true
+success "PHP dev tooling installed."
+
+# --- Prettier ---
+if [ -f "package.json" ]; then
+  info "Installing Prettier (npm)..."
+  ddev exec "npm install" && success "Prettier installed." || warn "npm install failed; run 'ddev exec npm install' later."
+fi
+
+# --- Optional: clone the target module ---
 if [ -n "${MODULE_REPO}" ] && [ ! -d "${MODULE_PATH}" ]; then
   info "Cloning module into ${MODULE_PATH}..."
   mkdir -p "$(dirname "${MODULE_PATH}")"
   git clone "${MODULE_REPO}" "${MODULE_PATH}" && success "Module cloned." || warn "Module clone failed; clone manually."
-else
-  success "Module clone skipped (no MODULE_REPO or path exists)."
 fi
 
-echo ""; success "Setup complete. Next: ddev start"
+# --- Install the site ---
+if [ "$SKIP_INSTALL" -eq 0 ]; then
+  info "Installing Drupal (profile: ${INSTALL_PROFILE})..."
+  ./scripts/install-drupal "${INSTALL_PROFILE}"
+  if [ -d "${MODULE_PATH}" ]; then
+    info "Enabling ${MODULE_NAME}..."
+    ddev drush en "${MODULE_NAME}" -y && ddev drush cr && success "${MODULE_NAME} enabled."
+  fi
+else
+  warn "--skip-install set: site not installed. Run ./scripts/install-drupal when ready."
+fi
+
+echo ""; success "Setup complete."
+echo "  Site:  ${BOLD}{{DDEV_URL}}${RESET}"
+echo "  Open:  ddev launch        Login: ddev drush uli"
+echo "  Tasks: make help"

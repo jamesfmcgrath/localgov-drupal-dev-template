@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="{{MODULE_NAME}}">
+  <description>PHPCS: Drupal and DrupalPractice standards for the custom module.</description>
+
+  <arg name="extensions" value="inc,install,module,php,profile,test,theme,yml"/>
+  <arg name="colors"/>
+  <arg value="p"/>
+
+  <file>{{MODULE_PATH}}</file>
+
+  <rule ref="./vendor/drupal/coder/coder_sniffer/Drupal"/>
+  <rule ref="./vendor/drupal/coder/coder_sniffer/DrupalPractice"/>
+</ruleset>

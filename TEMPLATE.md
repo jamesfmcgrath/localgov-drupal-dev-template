@@ -12,6 +12,9 @@
 | `{{DDEV_URL}}` | DDEV site URL | `https://{{DDEV_NAME}}.ddev.site` |
 | `{{CLIENT}}` | Client / project context line | `Example Council` |
 | `{{SKILL_FORK}}` | GitHub owner of the drupal-agent-resources fork hosting drupal-localgov | `jamesfmcgrath` |
+| `{{DRUPAL_TYPE}}` | DDEV project type (derived from version) | `drupal11` |
+| `{{COMPOSER_PROJECT}}` | Composer project to scaffold (derived from flavour/version) | `localgovdrupal/localgov-project` |
+| `{{INSTALL_PROFILE}}` | Install profile (derived from flavour) | `localgov` |
 
 ## Where tokens appear
 
@@ -22,6 +25,9 @@
 - `.claude/settings.local.json.dist`, module path in the allowlist
 - `agr.toml`, `SKILL_FORK` in the drupal-localgov handle
 - `README.md`, examples
+- `.ddev/config.yaml`, `DDEV_NAME`, `DRUPAL_TYPE`
+- `phpcs.xml.dist` / `phpstan.neon`, `MODULE_NAME`, `MODULE_PATH`
+- `package.json`, `MODULE_NAME`, `MODULE_PATH`, `CLIENT`
 
 ## Non-LocalGov projects
 

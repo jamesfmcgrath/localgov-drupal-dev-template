@@ -17,3 +17,8 @@
 
 # OS / editor
 .DS_Store
+
+# Node / Prettier / PHPUnit artifacts
+/node_modules/
+.phpunit.cache/
+/web/sites/simpletest/
