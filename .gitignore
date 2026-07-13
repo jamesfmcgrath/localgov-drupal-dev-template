@@ -1,0 +1,19 @@
+# AI agent tools, tracked files are canonical dev-environment config
+# Skills are installed from agr.toml + agr.lock (agr sync / setup.sh); do not vendor copies.
+.claude/skills/
+.cursor/skills/
+.claude/settings.local.json
+# Tracked (do NOT ignore): CLAUDE.md, .claude/MEMORY.md, .claude/agents/,
+# .claude/settings.local.json.dist, .cursorrules, agr.toml, agr.lock
+
+# Drupal / DDEV build artifacts (adjust to your project's policy)
+/vendor/
+/web/core/
+/web/modules/contrib/
+/web/themes/contrib/
+/web/sites/*/files/
+/web/sites/*/settings.local.php
+.ddev/.dbimageBuild/
+
+# OS / editor
+.DS_Store

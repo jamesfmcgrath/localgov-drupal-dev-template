@@ -1,0 +1,19 @@
+# agent-resources manifest. Skills install into .claude/skills/ and .cursor/skills/
+# and are gitignored; agr.toml + agr.lock are the tracked source of truth.
+# Reproduce on a fresh clone with: agr sync   (see scripts/setup.sh)
+
+default_source = "github"
+tools = ["claude", "cursor"]
+default_owner = "computerlovetech"
+default_repo = "skills"
+
+dependencies = [
+    {handle = "madsnorgaard/drupal-agent-resources/drupal-expert", type = "skill"},
+    {handle = "madsnorgaard/drupal-agent-resources/ddev-expert", type = "skill"},
+    {handle = "{{SKILL_FORK}}/drupal-agent-resources/drupal-localgov", type = "skill"},
+]
+
+[[source]]
+name = "github"
+type = "git"
+url = "https://github.com/{owner}/{repo}.git"

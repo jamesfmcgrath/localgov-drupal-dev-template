@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(<absolute-path-to-repo>/**)",
+      "Bash(./vendor/bin/phpcs -p {{MODULE_PATH}})",
+      "Bash(./vendor/bin/phpcbf {{MODULE_PATH}})",
+      "Bash(ddev drush *)",
+      "Bash(ls -la <absolute-path-to-repo>/{{MODULE_PATH}}/**)"
+    ]
+  }
+}
