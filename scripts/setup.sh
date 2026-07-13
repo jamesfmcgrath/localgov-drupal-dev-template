@@ -42,7 +42,8 @@ if command -v agr &>/dev/null; then
     success "Skills installed and locked (drupal-expert, ddev-expert, drupal-localgov)."
   fi
 else
-  warn "agr not found, skipping skills. Install later: uv tool install agr && agr sync"
+  warn "agr not found, skipping skills."
+  warn "Install uv (https://docs.astral.sh/uv/), then: uv tool install agr && agr sync"
 fi
 
 # --- drupal-reviewer agent ---

@@ -9,6 +9,21 @@ A starting point for working locally on a Drupal 10/11 module or site, with Clau
 - A one-shot `scripts/setup.sh` that installs the agent resources, wires `.claude/settings.local.json`, and can clone your target module into place.
 - A `scripts/init.sh` that turns this template into your project by filling in a handful of tokens.
 
+## Requirements
+
+- [DDEV](https://ddev.com) and Docker (required; `setup.sh` aborts without DDEV)
+- git (required)
+- [uv](https://docs.astral.sh/uv/) and [agr](https://github.com/kasperjunge/agent-resources) for the Claude Code / Cursor skills (recommended). Install once:
+
+  ```bash
+  # uv (macOS / Linux)
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+  # agr
+  uv tool install agr
+  ```
+
+`setup.sh` installs the skills with `agr` when it is present and skips with a hint if not. It does not install `uv` or `agr` for you, so install those first if you want the agent resources.
+
 ## Use it
 
 1. Create a repo from this template (GitHub: "Use this template"), then clone it.
