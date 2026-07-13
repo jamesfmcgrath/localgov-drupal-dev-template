@@ -18,6 +18,7 @@
 - `CLAUDE.md`, project context, module path, DDEV site, client
 - `.cursorrules`, same context block
 - `scripts/setup.sh`, `MODULE_REPO`, `MODULE_PATH`, `DDEV_NAME`, `SKILL_FORK`
+- `Makefile`, `MODULE_NAME`, `MODULE_PATH`, `DDEV_NAME`
 - `.claude/settings.local.json.dist`, module path in the allowlist
 - `agr.toml`, `SKILL_FORK` in the drupal-localgov handle
 - `README.md`, examples

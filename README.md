@@ -51,6 +51,23 @@ A starting point for working locally on a Drupal 10/11 module or site, with Clau
 | `{{CLIENT}}` | `Cumberland Council bus timetables` |
 | `{{SKILL_FORK}}` | `jamesfmcgrath` |
 
+## Common commands
+
+A `Makefile` wraps the everyday tasks (run `make help` for the full list):
+
+```bash
+make help          # List all targets
+make start         # Start DDEV (also stop / restart / open / logs)
+make install       # Clean install, choose a profile
+make si            # Fresh LocalGov install
+make enable        # Enable the module
+make cr            # Clear caches
+make test          # PHPUnit (also lint / lint-fix / stan)
+make check         # lint + stan + test
+make mod-status    # Module git status (also mod-log / mod-fetch / mod-branch)
+make switch BRANCH=1.0.x     # also: make mr MR=123, make tag VERSION=1.0.0-alpha1
+```
+
 ## Notes
 
 - Agent resource folders (`.claude/skills/`, `.cursor/skills/`) are gitignored and reproduced by `agr` from `agr.toml` + `agr.lock`. Do not vendor copies. Tracked canonical files: `CLAUDE.md`, `.cursorrules`, `agr.toml`, `agr.lock`, `.claude/agents/`, `.claude/settings.local.json.dist`.

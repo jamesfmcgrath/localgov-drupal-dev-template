@@ -11,7 +11,7 @@ ok()    { echo -e "${GREEN}OK $*${RESET}"; }
 warn()  { echo -e "${YELLOW}!! $*${RESET}"; }
 
 # Files that may contain tokens.
-FILES=(CLAUDE.md .cursorrules agr.toml README.md TEMPLATE.md .gitignore \
+FILES=(CLAUDE.md .cursorrules agr.toml README.md TEMPLATE.md .gitignore Makefile \
   scripts/setup.sh .claude/settings.local.json.dist)
 
 if ! grep -q "{{MODULE_NAME}}" CLAUDE.md 2>/dev/null; then
