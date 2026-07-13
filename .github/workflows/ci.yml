@@ -1,0 +1,69 @@
+# CI for the custom module developed in this repo.
+# Assumes the module lives at {{MODULE_PATH}} in this repository. If your module
+# is maintained in its own repo, put this workflow there instead.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  php:
+    name: PHP lint, static analysis, tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: gd, pdo_sqlite, sqlite3, mbstring, dom, xml, opcache
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress
+
+      - name: PHPCS (Drupal, DrupalPractice)
+        run: vendor/bin/phpcs
+
+      - name: PHPStan
+        run: vendor/bin/phpstan analyse --no-progress
+
+      - name: PHPUnit (unit + kernel)
+        env:
+          SIMPLETEST_DB: sqlite://localhost//tmp/db.sqlite
+          SYMFONY_DEPRECATIONS_HELPER: weak
+        run: |
+          dirs=""
+          for suite in Unit Kernel; do
+            d="{{MODULE_PATH}}/tests/src/$suite"
+            [ -d "$d" ] && dirs="$dirs $d"
+          done
+          if [ -n "$dirs" ]; then
+            vendor/bin/phpunit -c web/core $dirs
+          else
+            echo "No Unit/Kernel tests found under {{MODULE_PATH}}; skipping."
+          fi
+
+  prettier:
+    name: Prettier
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install --no-audit --no-fund
+      - run: npx prettier --check "{{MODULE_PATH}}/**/*.{css,js,json,yml,yaml,md}"

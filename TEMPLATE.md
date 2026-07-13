@@ -28,6 +28,7 @@
 - `.ddev/config.yaml`, `DDEV_NAME`, `DRUPAL_TYPE`
 - `phpcs.xml.dist` / `phpstan.neon`, `MODULE_NAME`, `MODULE_PATH`
 - `package.json`, `MODULE_NAME`, `MODULE_PATH`, `CLIENT`
+- `.github/workflows/ci.yml`, `MODULE_PATH`
 
 ## Non-LocalGov projects
 
