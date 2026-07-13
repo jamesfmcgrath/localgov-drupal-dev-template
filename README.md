@@ -25,7 +25,16 @@ A starting point for working locally on a Drupal 10/11 module or site, with Clau
    ./scripts/setup.sh
    ```
 
-4. Start work: `ddev start`, then open the project in Claude Code or Cursor.
+4. Install the Drupal site, choosing a profile when prompted:
+
+   ```bash
+   ./scripts/install-drupal            # interactive profile menu
+   ./scripts/install-drupal localgov   # or pass a profile directly
+   ```
+
+   Profiles: Standard, Umami, LocalGov, LocalGov (with Demo Content), LocalGov Microsites, LocalGov (with Elections). It runs `ddev drush si`, exports config, clears caches, commits `config/` if present, and prints a one-time login link.
+
+5. Start work: `ddev start` if not already running, then open the project in Claude Code or Cursor.
 
 ## Tokens
 
