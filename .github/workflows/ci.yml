@@ -60,6 +60,14 @@ jobs:
       - name: PHPStan
         run: vendor/bin/phpstan analyse --no-progress
 
+      - name: Twig CS Fixer
+        run: |
+          if find {{MODULE_PATH}} -name '*.twig' -print -quit | grep -q .; then
+            vendor/bin/twig-cs-fixer lint {{MODULE_PATH}}
+          else
+            echo "No .twig files found under {{MODULE_PATH}}; skipping."
+          fi
+
       - name: PHPUnit (unit + kernel)
         env:
           SIMPLETEST_DB: sqlite://localhost//tmp/db.sqlite

@@ -4,7 +4,7 @@
 ##
 
 .PHONY: help start stop restart open logs si install enable cr \
-        test lint lint-fix stan check format format-check \
+        test lint lint-fix stan check format format-check twig-lint twig-fix \
         mod-log mod-status mod-fetch mod-branch tag switch mr
 
 MODULE = {{MODULE_PATH}}
@@ -60,7 +60,13 @@ lint-fix: ## Auto-fix PHPCS violations with PHPCBF
 stan: ## Run PHPStan static analysis
 	ddev exec vendor/bin/phpstan analyse $(MODULE)
 
-check: lint stan test ## Run all quality checks (lint + stan + test)
+twig-lint: ## Lint Twig templates
+	ddev exec vendor/bin/twig-cs-fixer lint $(MODULE)
+
+twig-fix: ## Auto-fix Twig template violations
+	ddev exec vendor/bin/twig-cs-fixer lint $(MODULE) --fix
+
+check: lint stan test twig-lint ## Run all quality checks (lint + stan + test + twig-lint)
 
 format: ## Format front-end assets with Prettier (CSS/JS/JSON/YAML/MD)
 	ddev exec npx prettier --write "$(MODULE)/**/*.{css,js,json,yml,yaml,md}"

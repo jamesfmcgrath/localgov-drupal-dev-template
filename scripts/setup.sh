@@ -92,9 +92,10 @@ success "Dependencies installed."
 
 # --- Dev tooling (lint / static analysis / tests) ---
 info "Adding PHP dev tooling..."
-ddev composer require --dev --no-interaction \
+ddev composer require --dev --no-interaction -W \
   drupal/core-dev drupal/coder mglaman/phpstan-drupal \
   phpstan/phpstan phpstan/phpstan-deprecation-rules \
+  vincentlanglet/twig-cs-fixer drush/drush \
   || warn "Some dev dependencies failed to install; add them manually."
 ddev composer config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true 2>/dev/null || true
 success "PHP dev tooling installed."

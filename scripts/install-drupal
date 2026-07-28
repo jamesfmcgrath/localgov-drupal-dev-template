@@ -23,7 +23,7 @@ else
 fi
 
 case $profile_selection in
-  "Standard" | "st" | 1)
+  "Standard" | "standard" | "st" | 1)
     ddev drush si standard -y
     ;;
   "Umami" | "umami" | 2)

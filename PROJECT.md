@@ -25,15 +25,22 @@ then ./scripts/setup.sh, and get a running Drupal site ready to code in.
 - scripts/setup.sh: one-command spin-up. Installs agr skills + drupal-reviewer,
   starts DDEV, scaffolds the Drupal project (composer create into a container
   temp dir then cp -n so template files are not clobbered), composer install,
-  adds dev tooling, clones the module if a repo URL was given, runs
-  install-drupal, enables the module. Flags: --skip-install, --force-reviewer.
+  adds dev tooling (composer require -W, needed since drupal/core-dev does not
+  always resolve cleanly against the vanilla flavour's current lock without
+  it; includes drush/drush since only the LocalGov distribution bundles drush
+  by default), clones the module if a repo URL was given, runs install-drupal,
+  enables the module. Flags: --skip-install, --force-reviewer.
 - scripts/install-drupal: profile picker (Standard/Umami/LocalGov/+Demo/
-  Microsites/+Elections); accepts a profile arg or runs interactively.
+  Microsites/+Elections); accepts a profile arg (case-insensitive for
+  "standard", matching init.sh's lowercase INSTALL_PROFILE) or runs
+  interactively.
 - Tooling: .ddev/config.yaml (with test env), phpcs.xml.dist (Drupal +
   DrupalPractice), phpstan.neon (phpstan-drupal), PHPUnit via `-c web/core` plus
-  DDEV web_environment, Prettier (package.json + .prettierrc.json), a tokenised
+  DDEV web_environment, vincentlanglet/twig-cs-fixer for Twig linting (Prettier
+  does not cover Twig), Prettier (package.json + .prettierrc.json), a tokenised
   Makefile, .editorconfig.
-- CI: .github/workflows/ci.yml runs phpcs, phpstan, phpunit (unit+kernel,
+- CI: .github/workflows/ci.yml runs phpcs, phpstan, twig-cs-fixer (guarded to
+  skip cleanly when the module has no .twig files), phpunit (unit+kernel,
   sqlite), a prettier check, and an a11y job. The a11y job installs the site
   with drush si and sqlite, serves it with drush rs (falling back to php -S if
   that misbehaves), creates a node via drush, then runs pa11y-ci (WCAG2AA)
@@ -80,10 +87,17 @@ Actions ${{ ... }} expressions must be left untouched.
 ### Status (2026-07)
 
 Verified end to end on clean pulls for LocalGov + Drupal 11 and LocalGov +
-Drupal 10. CI added. Vanilla flavour not yet live-run. No Twig formatting in
-Prettier; functional/browser tests not in CI. The a11y (pa11y-ci) CI job needs
-live verification: it has only been checked for YAML syntax, not run against
-GitHub Actions infrastructure.
+Drupal 10. Vanilla + Drupal 11 also verified end to end (2026-07-28), which
+surfaced and fixed three bugs: scripts/install-drupal only matched the
+capitalised "Standard" option while init.sh passes lowercase "standard";
+setup.sh's dev-tooling composer require failed to resolve against current
+drupal/recommended-project without -W; and drush/drush was never installed
+for the vanilla flavour (LocalGov bundles it, vanilla does not), so
+setup.sh's dev-tooling require now includes drush/drush and passes -W. CI
+added. Twig linting added via twig-cs-fixer (make twig-lint / twig-fix, wired
+into CI); functional/browser tests not in CI. The a11y (pa11y-ci) CI job
+needs live verification: it has only been checked for YAML syntax, not run
+against GitHub Actions infrastructure. Vanilla + Drupal 10 not yet live-run.
 
 ## Start prompt
 
