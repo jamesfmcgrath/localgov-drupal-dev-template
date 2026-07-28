@@ -1,5 +1,6 @@
 # agent-resources manifest. Skills install into .claude/skills/ and .cursor/skills/
-# and are gitignored; agr.toml + agr.lock are the tracked source of truth.
+# and are gitignored; agr.toml is the tracked source of truth, and the project
+# created from this template commits its generated agr.lock (see below).
 # Reproduce on a fresh clone with: agr sync   (see scripts/setup.sh)
 #
 # agr.lock is NOT committed in this bare template: {{SKILL_FORK}} below is a
