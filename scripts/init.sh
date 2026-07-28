@@ -11,12 +11,12 @@ ok()    { echo -e "${GREEN}OK $*${RESET}"; }
 warn()  { echo -e "${YELLOW}!! $*${RESET}"; }
 
 # Files that may contain tokens.
-FILES=(CLAUDE.md .cursorrules agr.toml README.md TEMPLATE.md .gitignore Makefile \
-  scripts/setup.sh .claude/settings.local.json.dist .ddev/config.yaml \
-  phpcs.xml.dist phpstan.neon package.json .github/workflows/ci.yml)
+FILES=(AGENTS.md agr.toml README.md TEMPLATE.md .gitignore Makefile \
+  scripts/setup.sh .claude/settings.local.json.dist .claude/commands/a11y-check.md \
+  .ddev/config.yaml phpcs.xml.dist phpstan.neon package.json .github/workflows/ci.yml)
 
-if ! grep -q "{{MODULE_NAME}}" CLAUDE.md 2>/dev/null; then
-  warn "Already initialised (no {{MODULE_NAME}} token in CLAUDE.md). Aborting."
+if ! grep -q "{{MODULE_NAME}}" AGENTS.md 2>/dev/null; then
+  warn "Already initialised (no {{MODULE_NAME}} token in AGENTS.md). Aborting."
   exit 1
 fi
 

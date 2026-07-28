@@ -2,10 +2,18 @@
   "permissions": {
     "allow": [
       "Read(<absolute-path-to-repo>/**)",
-      "Bash(./vendor/bin/phpcs -p {{MODULE_PATH}})",
-      "Bash(./vendor/bin/phpcbf {{MODULE_PATH}})",
-      "Bash(ddev drush *)",
-      "Bash(ls -la <absolute-path-to-repo>/{{MODULE_PATH}}/**)"
+      "Bash(grep:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(ddev drush:*)",
+      "Bash(ddev composer:*)",
+      "Bash(ddev exec vendor/bin/phpcs {{MODULE_PATH}})",
+      "Bash(ddev exec vendor/bin/phpcbf {{MODULE_PATH}})",
+      "Bash(ddev exec vendor/bin/phpstan analyse {{MODULE_PATH}})",
+      "Bash(ddev exec vendor/bin/phpunit -c web/core {{MODULE_PATH}})"
     ]
   }
 }
