@@ -19,7 +19,7 @@ SKILL_FORK="{{SKILL_FORK}}"
 COMPOSER_PROJECT="{{COMPOSER_PROJECT}}"
 INSTALL_PROFILE="{{INSTALL_PROFILE}}"
 REVIEWER_REF="main"
-REVIEWER_URL="https://raw.githubusercontent.com/madsnorgaard/drupal-agent-resources/${REVIEWER_REF}/.claude/agents/drupal-reviewer.md"
+REVIEWER_URL="https://raw.githubusercontent.com/${SKILL_FORK}/drupal-agent-resources/${REVIEWER_REF}/.claude/agents/drupal-reviewer.md"
 
 FORCE_REVIEWER=0; SKIP_INSTALL=0
 for a in "$@"; do
