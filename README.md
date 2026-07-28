@@ -9,7 +9,7 @@ A starting point for working locally on a Drupal 10/11 module or site, with Clau
 - An accessibility audit workflow (`.claude/commands/a11y-check.md`): axe-core scan plus keyboard, reflow, and motion passes, aimed at WCAG 2.2 AA (the public sector legal floor is WCAG 2.1 AA / EN 301 549).
 - A DDEV config and a one-command `scripts/setup.sh` that starts DDEV, scaffolds a Drupal project (LocalGov or vanilla, chosen at init), installs the site, adds dev tooling, and enables your module.
 - PHP tooling wired to the Makefile: PHPCS (Drupal, DrupalPractice), PHPStan (phpstan-drupal), PHPUnit, plus Prettier for front-end assets.
-- A GitHub Actions CI workflow (`.github/workflows/ci.yml`) running PHPCS, PHPStan, PHPUnit (unit + kernel), and the Prettier check on push and pull request.
+- A GitHub Actions CI workflow (`.github/workflows/ci.yml`) running PHPCS, PHPStan, PHPUnit (unit + kernel), the Prettier check, and a pa11y-ci accessibility job (WCAG2AA, against an installed sqlite site) on push and pull request.
 - A `scripts/init.sh` that turns the template into your project by filling in a handful of tokens.
 
 ## Requirements

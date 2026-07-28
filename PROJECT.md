@@ -34,11 +34,18 @@ then ./scripts/setup.sh, and get a running Drupal site ready to code in.
   DDEV web_environment, Prettier (package.json + .prettierrc.json), a tokenised
   Makefile, .editorconfig.
 - CI: .github/workflows/ci.yml runs phpcs, phpstan, phpunit (unit+kernel,
-  sqlite) and a prettier check. A guard job skips everything when composer.json
-  is absent, so the bare template repo does not show a red CI run.
+  sqlite), a prettier check, and an a11y job. The a11y job installs the site
+  with drush si and sqlite, serves it with drush rs (falling back to php -S if
+  that misbehaves), creates a node via drush, then runs pa11y-ci (WCAG2AA)
+  against the URLs in .pa11yci (front page, /search, one node page). A guard
+  job skips everything when composer.json is absent, so the bare template repo
+  does not show a red CI run.
 - Agent resources: agr.toml installs drupal-expert, ddev-expert, and
   drupal-localgov (from jamesfmcgrath/drupal-agent-resources). Standards live in
-  CLAUDE.md and .cursorrules.
+  AGENTS.md, the single source of truth; CLAUDE.md is only the @AGENTS.md import
+  stub (Cursor reads AGENTS.md natively, .cursorrules is retired). The
+  accessibility audit workflow lives in .claude/commands/a11y-check.md; the
+  target is WCAG 2.2 AA, legal floor WCAG 2.1 AA / EN 301 549.
 
 ### Tokens (substituted by init.sh)
 
@@ -51,8 +58,9 @@ Actions ${{ ... }} expressions must be left untouched.
 
 - No em dashes anywhere (use commas, colons, or restructure).
 - Agent resource dirs (.claude/skills/, .cursor/skills/) are gitignored and
-  reproduced by agr; do not vendor copies. Tracked: CLAUDE.md, .cursorrules,
-  agr.toml, agr.lock, .claude/agents/, .claude/settings.local.json.dist.
+  reproduced by agr; do not vendor copies. Tracked: AGENTS.md, CLAUDE.md (import
+  stub), agr.toml, agr.lock, .claude/agents/, .claude/commands/,
+  .claude/settings.local.json.dist.
 - Scripts must stay executable and be committed as 100755.
 - Keep both flavour branches (localgov, vanilla) and both versions (10, 11)
   working.
@@ -73,7 +81,9 @@ Actions ${{ ... }} expressions must be left untouched.
 
 Verified end to end on clean pulls for LocalGov + Drupal 11 and LocalGov +
 Drupal 10. CI added. Vanilla flavour not yet live-run. No Twig formatting in
-Prettier; functional/browser tests not in CI.
+Prettier; functional/browser tests not in CI. The a11y (pa11y-ci) CI job needs
+live verification: it has only been checked for YAML syntax, not run against
+GitHub Actions infrastructure.
 
 ## Start prompt
 
