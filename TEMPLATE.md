@@ -18,8 +18,8 @@
 
 ## Where tokens appear
 
-- `CLAUDE.md`, project context, module path, DDEV site, client
-- `.cursorrules`, same context block
+- `AGENTS.md`, project context, module path, DDEV site, client (CLAUDE.md is only the @AGENTS.md import stub, no tokens)
+- `.claude/commands/a11y-check.md`, DDEV site URL, module name
 - `scripts/setup.sh`, `MODULE_REPO`, `MODULE_PATH`, `DDEV_NAME`, `SKILL_FORK`
 - `Makefile`, `MODULE_NAME`, `MODULE_PATH`, `DDEV_NAME`
 - `.claude/settings.local.json.dist`, module path in the allowlist
@@ -29,6 +29,16 @@
 - `phpcs.xml.dist` / `phpstan.neon`, `MODULE_NAME`, `MODULE_PATH`
 - `package.json`, `MODULE_NAME`, `MODULE_PATH`, `CLIENT`
 - `.github/workflows/ci.yml`, `MODULE_PATH`
+
+## agr.lock
+
+`agr.toml` is tracked, but `agr.lock` is not: it can't be generated correctly
+until `{{SKILL_FORK}}` above is substituted with a real GitHub owner, since
+the `drupal-localgov` handle depends on it. `scripts/setup.sh` runs `agr sync`
+(or `agr add` if no lock exists yet) after `init.sh` has run, which writes
+`agr.lock` with concrete commits pinned for `drupal-expert`, `ddev-expert`,
+and `drupal-localgov`. Commit that generated file in your new project so
+skill versions are pinned and reproducible for the rest of the team.
 
 ## Non-LocalGov projects
 

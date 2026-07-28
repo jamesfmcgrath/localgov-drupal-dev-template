@@ -3,8 +3,10 @@
 .claude/skills/
 .cursor/skills/
 .claude/settings.local.json
-# Tracked (do NOT ignore): CLAUDE.md, .claude/MEMORY.md, .claude/agents/,
-# .claude/settings.local.json.dist, .cursorrules, agr.toml, agr.lock
+# Tracked (do NOT ignore): AGENTS.md, CLAUDE.md (import stub), .claude/MEMORY.md,
+# .claude/agents/, .claude/commands/, .claude/settings.local.json.dist, agr.toml
+# agr.lock is NOT tracked here (agr.toml still holds the {{SKILL_FORK}} token);
+# setup.sh generates it on first run and the created project should commit it.
 
 # Drupal / DDEV build artifacts (adjust to your project's policy)
 /vendor/

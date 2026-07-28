@@ -5,7 +5,8 @@ A starting point for working locally on a Drupal 10/11 module or site, with Clau
 ## What you get
 
 - Claude Code + Cursor agent resources installed reproducibly via [`agr`](https://github.com/kasperjunge/agent-resources): `drupal-expert`, `ddev-expert`, and `drupal-localgov` skills, plus the `drupal-reviewer` agent.
-- Shared coding and review standards across Claude (`CLAUDE.md`) and Cursor (`.cursorrules`).
+- Shared coding, review, and accessibility standards in a single `AGENTS.md` (read natively by Cursor and most agents; Claude Code loads it via the `@AGENTS.md` import in the `CLAUDE.md` stub).
+- An accessibility audit workflow (`.claude/commands/a11y-check.md`): axe-core scan plus keyboard, reflow, and motion passes, aimed at WCAG 2.2 AA (the public sector legal floor is WCAG 2.1 AA / EN 301 549).
 - A DDEV config and a one-command `scripts/setup.sh` that starts DDEV, scaffolds a Drupal project (LocalGov or vanilla, chosen at init), installs the site, adds dev tooling, and enables your module.
 - PHP tooling wired to the Makefile: PHPCS (Drupal, DrupalPractice), PHPStan (phpstan-drupal), PHPUnit, plus Prettier for front-end assets.
 - A GitHub Actions CI workflow (`.github/workflows/ci.yml`) running PHPCS, PHPStan, PHPUnit (unit + kernel), and the Prettier check on push and pull request.
@@ -84,5 +85,6 @@ make switch BRANCH=1.0.x     # also: make mr MR=123, make tag VERSION=1.0.0-alph
 
 ## Notes
 
-- Agent resource folders (`.claude/skills/`, `.cursor/skills/`) are gitignored and reproduced by `agr` from `agr.toml` + `agr.lock`. Do not vendor copies. Tracked canonical files: `CLAUDE.md`, `.cursorrules`, `agr.toml`, `agr.lock`, `.claude/agents/`, `.claude/settings.local.json.dist`.
+- Agent resource folders (`.claude/skills/`, `.cursor/skills/`) are gitignored and reproduced by `agr` from `agr.toml` + `agr.lock`. Do not vendor copies. Tracked canonical files: `AGENTS.md`, `CLAUDE.md` (import stub), `agr.toml`, `.claude/agents/`, `.claude/commands/`, `.claude/settings.local.json.dist`.
 - The `drupal-localgov` skill is hosted in a fork of `drupal-agent-resources` (`{{SKILL_FORK}}/drupal-agent-resources`). Point `{{SKILL_FORK}}` at whichever fork you maintain.
+- `agr.lock` is not committed in this bare template, since `{{SKILL_FORK}}` is still a token and agr cannot resolve it into a lock. `scripts/setup.sh` runs `agr sync`/`agr add` on first run, after `init.sh` has substituted a real GitHub owner, which generates `agr.lock`. Commit that generated `agr.lock` in the project created from this template so skill versions are pinned for the rest of the team.
