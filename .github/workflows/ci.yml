@@ -106,14 +106,14 @@ jobs:
             echo "No Unit/Kernel tests found under {{MODULE_PATH}}; skipping."
           fi
 
-      - name: Check for JS/CSS files
+      - name: Check for JS/CSS/YAML files
         id: frontend_check
         run: |
-          if find {{MODULE_PATH}} \( -name '*.js' -o -name '*.css' \) -print -quit | grep -q .; then
+          if find {{MODULE_PATH}} \( -name '*.js' -o -name '*.yml' -o -name '*.css' \) -print -quit | grep -q .; then
             echo "found=true" >> "$GITHUB_OUTPUT"
           else
             echo "found=false" >> "$GITHUB_OUTPUT"
-            echo "No .js or .css files found under {{MODULE_PATH}}; skipping ESLint/Stylelint setup."
+            echo "No .js, .yml, or .css files found under {{MODULE_PATH}}; skipping ESLint/Stylelint setup."
           fi
 
       - name: Set up Node
