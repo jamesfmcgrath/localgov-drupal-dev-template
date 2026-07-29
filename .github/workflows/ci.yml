@@ -106,6 +106,35 @@ jobs:
             echo "No Unit/Kernel tests found under {{MODULE_PATH}}; skipping."
           fi
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Drupal core's frontend dependencies
+        run: npm ci --prefix web/core
+
+      - name: ESLint (Drupal core config)
+        run: |
+          if find {{MODULE_PATH}} -name '*.js' -print -quit | grep -q .; then
+            node web/core/node_modules/.bin/eslint {{MODULE_PATH}} \
+              --no-error-on-unmatched-pattern \
+              --ignore-pattern='*.es6.js' \
+              --resolve-plugins-relative-to=web/core \
+              --ext=.js,.yml \
+              -c web/core/.eslintrc.passing.json
+          else
+            echo "No .js files found under {{MODULE_PATH}}; skipping eslint."
+          fi
+
+      - name: Stylelint (Drupal core config)
+        run: |
+          if find {{MODULE_PATH}} -name '*.css' -print -quit | grep -q .; then
+            web/core/node_modules/.bin/stylelint --config web/core/.stylelintrc.json "{{MODULE_PATH}}/**/*.css"
+          else
+            echo "No .css files found under {{MODULE_PATH}}; skipping stylelint."
+          fi
+
   prettier:
     name: Prettier
     needs: guard
@@ -118,6 +147,14 @@ jobs:
           node-version: '20'
       - run: npm install --no-audit --no-fund
       - run: npx prettier --check "{{MODULE_PATH}}/**/*.{css,js,json,yml,yaml,md}"
+
+      - name: CSpell
+        run: |
+          if find {{MODULE_PATH}} -type f -print -quit | grep -q .; then
+            npx cspell --no-progress "{{MODULE_PATH}}/**"
+          else
+            echo "No files found under {{MODULE_PATH}}; skipping cspell."
+          fi
 
   # Needs live verification: this job has been validated for YAML syntax only,
   # not run against real CI infrastructure yet. Installing the LocalGov
