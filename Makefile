@@ -82,6 +82,18 @@ spell: ## Spell-check the module with cspell
 	  echo "No files found under $(MODULE); skipping cspell."; \
 	fi
 
+lint-js: ## Lint module JS/YAML with Drupal core's ESLint config
+	@if find $(MODULE) -name '*.js' -print -quit | grep -q .; then \
+	  ddev exec node web/core/node_modules/.bin/eslint $(MODULE) \
+	    --no-error-on-unmatched-pattern \
+	    --ignore-pattern='*.es6.js' \
+	    --resolve-plugins-relative-to=web/core \
+	    --ext=.js,.yml \
+	    -c web/core/.eslintrc.passing.json; \
+	else \
+	  echo "No .js files found under $(MODULE); skipping eslint."; \
+	fi
+
 check: lint stan test twig-lint ## Run all quality checks (lint + stan + test + twig-lint)
 
 format: ## Format front-end assets with Prettier (CSS/JS/JSON/YAML/MD)
