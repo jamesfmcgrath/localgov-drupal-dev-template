@@ -27,7 +27,15 @@ expressions must never be touched.
 - Stage 5, Drupal CMS flavour: OPEN (prompt below).
 - Stage 6, template regression suite: OPEN (prompt below). Recommended order:
   6 before 5, so the CMS flavour lands with regression cover.
-- Also open: vanilla + Drupal 10 live run (prompt below).
+- Stage 7, optional module (site-only mode): OPEN (prompt below).
+- Stage 8, drupal.org pipeline parity: OPEN (prompt below).
+- Vanilla + Drupal 10 live run: DONE (2026-07-29; site installs and boots on
+  Drupal 10.6.14, both vanilla setup bugs from Stage 4 hold fixed, make check
+  passes: phpcs/phpunit/twig-cs-fixer clean, empty module test suite skips as
+  expected. Caveat: `make stan` can report a spurious exit 1 with zero real
+  phpstan errors, a ddev-exec/PHPStan process-exit interaction, not specific
+  to Drupal 10 or vanilla; confirmed the identical command exits 0 when run
+  through a shell wrapper. Not yet root-caused or fixed in the Makefile).
 
 ---
 
@@ -85,8 +93,8 @@ by the manual smoke-test convention in PROJECT.md. Automate that convention.
 1. Create scripts/test-template.sh (tracked, mode 100755). It must:
    - Define a COMBOS list at the top, one entry per supported flavour/version
      pair with the expected derived values, currently:
-       localgov 11 -> drupal11, localgovdrupal/localgov-project, localgov
-       localgov 10 -> drupal10, localgovdrupal/localgov-project:^3.0, localgov
+       localgov 11 -> drupal11, drupal/localgov_project, localgov
+       localgov 10 -> drupal10, drupal/localgov_project:^3.0, localgov
        vanilla  11 -> drupal11, drupal/recommended-project:^11, standard
        vanilla  10 -> drupal10, drupal/recommended-project:^10, standard
      (Add cms 11 here when the Stage 5 flavour lands; keep this list the single
@@ -131,6 +139,126 @@ by the manual smoke-test convention in PROJECT.md. Automate that convention.
    confirm the suite fails, revert) so the failure path is proven, not assumed.
 No em dashes. Scripts stay 100755. GitHub Actions ${{ }} expressions untouched
 except where the new job legitimately uses them.
+```
+
+---
+
+## Stage 7: Make the module optional (site-only mode)
+
+```
+Make the custom module optional at init time. Two usage modes:
+site-only (just spin up a Drupal or LocalGov site) and module mode (current
+behaviour, developing a module against the site). Module mode must not change.
+
+1. scripts/init.sh:
+   - The module name prompt becomes optional: "Module machine name (blank for
+     a site-only project)". Blank selects site-only mode; a name selects
+     module mode exactly as today.
+   - In site-only mode: skip the module label, path, and repo prompts
+     entirely. Substitute the module tokens with values that keep every file
+     valid: MODULE_NAME empty, MODULE_PATH web/modules/custom (the directory,
+     so quality tooling scopes to all future custom modules), MODULE_REPO
+     empty. Derive nothing else differently; flavour and version work as
+     today.
+   - Print a closing note in site-only mode: to add a module later, create it
+     under web/modules/custom/ and set MODULE in the Makefile.
+2. scripts/setup.sh: guard every module-specific step (clone, drush en) so a
+   blank module name skips them silently with one informational line. The
+   site install itself must be identical in both modes.
+3. Makefile: with MODULE set to web/modules/custom, test/lint/stan/twig
+   targets operate on the whole custom modules directory, which is correct
+   for both modes; the module git targets (mod-log, mod-status, mod-fetch,
+   mod-branch, tag, switch, mr) and the enable target must detect a
+   site-only setup (MODULE has no repo of its own or no module name) and
+   exit with a clear "site-only project" message instead of failing
+   confusingly.
+4. phpcs.xml.dist, phpstan.neon, package.json, .github/workflows/ci.yml,
+   .claude/settings.local.json.dist, .claude/commands/a11y-check.md, and
+   AGENTS.md: verify each stays valid and sensible when MODULE_PATH is
+   web/modules/custom and MODULE_NAME is empty. The ci.yml phpunit step and
+   the twig step already guard on directory contents; confirm the phpcs and
+   phpstan steps tolerate an empty or module-free web/modules/custom (skip
+   with a message rather than erroring on "no files to scan"). Reword the
+   a11y-check page-selection line so it reads naturally when no module name
+   is present.
+5. AGENTS.md project context: in site-only mode the Module line should read
+   as "none yet, site-only project" rather than an empty backtick pair.
+   Handle this in init.sh (conditional substitution), not by hand.
+6. Regression cover: scripts/test-template.sh (Stage 6) gains a site-only
+   variant for at least one flavour/version combo, asserting init.sh exits 0
+   with a blank module answer, no {{UPPER_SNAKE}} tokens remain, the Makefile
+   parses, and setup.sh passes bash -n. If Stage 6 has not run yet, note that
+   this requirement moves into its COMBOS design.
+7. Docs: README.md (Use it section: mention the blank-for-site-only prompt;
+   What you get), TEMPLATE.md token table (MODULE_NAME "blank for
+   site-only"), PROJECT.md (template contents, conventions: both modes must
+   keep working from now on).
+8. Smoke-test both modes per the repo conventions before calling it done:
+   one throwaway init in site-only mode and one in module mode, checking the
+   usual invariants (tokens, ${{ }}, bash -n, make -n, executable bits).
+No em dashes. Scripts stay 100755.
+```
+
+---
+
+## Stage 8: drupal.org (git.drupalcode.org) pipeline parity
+
+```
+Modules developed with this template are pushed to git.drupalcode.org, where
+the official gitlab_templates pipeline runs. Make sure a module that passes
+locally also passes there, and ship a ready pipeline file for module repos.
+
+0. Read the official docs first and treat them as authoritative over this
+   prompt (the job list changes over time):
+   https://project.pages.drupalcode.org/gitlab_templates/ (setup page and
+   jobs page). As of 2026-07 the default validation jobs include
+   composer-lint, cspell, eslint, stylelint, phpcs, and twig-cs-fixer, with
+   phpunit and nightwatch as default test jobs; phpstan and variant testing
+   (previous/next minor/major, max PHP) are controlled by OPT_IN_* /
+   RUN_JOB_* / SKIP_* variables. Confirm the current defaults and the
+   canonical .gitlab-ci.yml include block from the setup page.
+
+1. Ship a ready module pipeline file: assets/module.gitlab-ci.yml containing
+   the canonical include block from the docs plus a commented variables
+   section (OPT_IN_TEST_NEXT_MAJOR, _TARGET_PHP, the relevant SKIP_ and
+   RUN_JOB_ knobs, each with a one-line comment). Add a Makefile target
+   module-ci that copies it to $(MODULE)/.gitlab-ci.yml if none exists, and
+   refuses with a message if one does.
+
+2. Local parity so make check predicts the drupalcode pipeline:
+   - cspell: add a cspell config and a project-words file at the template
+     root, wired to a Makefile target (spell) covering $(MODULE); seed the
+     words file with obvious project terms (localgov, drush, ddev).
+   - eslint and stylelint: run them against $(MODULE) using Drupal core's
+     configs from the spun-up site (web/core/), the same approach the
+     drupalcode jobs use; Makefile targets lint-js and lint-css, both via
+     ddev exec. Guard each to skip with a message when the module has no
+     .js or .css files.
+   - Add spell, lint-js, and lint-css to the check aggregate target.
+   - Note in the summary anything the drupalcode defaults run that local
+     tooling still cannot (nightwatch is expected to stay CI-only; say so).
+
+3. GitHub Actions ci.yml: add matching cspell, eslint, and stylelint steps
+   to the php or prettier job, each guarded on relevant files existing, so
+   the GitHub side of a project repo enforces the same standards.
+
+4. Check for conflicts: Prettier formats CSS and JS in this template; core's
+   eslint and stylelint configs are Prettier-aware, but verify on a sample
+   file that prettier --write output passes both linters, and reconcile
+   (adjust prettier config or scope) if not.
+
+5. Docs: README.md (What you get: drupal.org pipeline parity and the
+   module-ci target; Common commands table), PROJECT.md (template contents),
+   AGENTS.md Working Rules line: PHP changes must pass make check, which now
+   mirrors the git.drupalcode.org default pipeline.
+
+6. Regression suite (if scripts/test-template.sh exists): assert
+   assets/module.gitlab-ci.yml survives init.sh with no tokens left inside
+   it if you tokenise it, or verbatim if you do not, and that make -n
+   module-ci parses. Smoke-test per repo conventions either way.
+No em dashes. Scripts stay 100755. GitHub Actions ${{ }} expressions and the
+GitLab $ variables in the shipped pipeline file must both survive init.sh
+untouched; extend the token regex checks to cover the new file.
 ```
 
 ---

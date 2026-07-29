@@ -63,7 +63,7 @@ To reinstall or switch profile later, run `./scripts/install-drupal` (interactiv
 | `{{CLIENT}}` | `Cumberland Council bus timetables` |
 | `{{SKILL_FORK}}` | `jamesfmcgrath` |
 
-From your flavour/version answers, `init.sh` also derives `{{DRUPAL_TYPE}}` (DDEV type, e.g. `drupal11`), `{{COMPOSER_PROJECT}}` (e.g. `localgovdrupal/localgov-project`), and `{{INSTALL_PROFILE}}` (e.g. `localgov`).
+From your flavour/version answers, `init.sh` also derives `{{DRUPAL_TYPE}}` (DDEV type, e.g. `drupal11`), `{{COMPOSER_PROJECT}}` (e.g. `drupal/localgov_project`), and `{{INSTALL_PROFILE}}` (e.g. `localgov`).
 
 ## Common commands
 

@@ -13,7 +13,7 @@
 | `{{CLIENT}}` | Client / project context line | `Example Council` |
 | `{{SKILL_FORK}}` | GitHub owner of the drupal-agent-resources fork hosting drupal-localgov | `jamesfmcgrath` |
 | `{{DRUPAL_TYPE}}` | DDEV project type (derived from version) | `drupal11` |
-| `{{COMPOSER_PROJECT}}` | Composer project to scaffold (derived from flavour/version) | `localgovdrupal/localgov-project` |
+| `{{COMPOSER_PROJECT}}` | Composer project to scaffold (derived from flavour/version) | `drupal/localgov_project` |
 | `{{INSTALL_PROFILE}}` | Install profile (derived from flavour) | `localgov` |
 
 ## Where tokens appear

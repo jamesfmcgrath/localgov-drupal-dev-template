@@ -52,11 +52,11 @@ case "$FLAVOUR" in
   *)
     INSTALL_PROFILE="localgov"
     # LocalGov distribution: 4.x = Drupal 11, 3.x = Drupal 10. Verify the
-    # localgov-project template tag if a clean create fails.
+    # localgov_project template tag if a clean create fails.
     if [ "$VERSION" = "10" ]; then
-      COMPOSER_PROJECT="localgovdrupal/localgov-project:^3.0"
+      COMPOSER_PROJECT="drupal/localgov_project:^3.0"
     else
-      COMPOSER_PROJECT="localgovdrupal/localgov-project"
+      COMPOSER_PROJECT="drupal/localgov_project"
     fi
     ;;
 esac

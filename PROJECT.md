@@ -100,7 +100,16 @@ setup.sh's dev-tooling require now includes drush/drush and passes -W. CI
 added. Twig linting added via twig-cs-fixer (make twig-lint / twig-fix, wired
 into CI); functional/browser tests not in CI. The a11y (pa11y-ci) CI job
 needs live verification: it has only been checked for YAML syntax, not run
-against GitHub Actions infrastructure. Vanilla + Drupal 10 not yet live-run.
+against GitHub Actions infrastructure. Vanilla + Drupal 10 verified end to
+end (2026-07-29): both vanilla setup bugs above hold fixed on Drupal 10, the
+site installs and boots (Drupal 10.6.14, front page 200), and make check
+passes (phpcs, phpunit, twig-cs-fixer clean; empty module test suite skips
+as expected). Known caveat: `make stan` (ddev exec vendor/bin/phpstan analyse
+...) can report a spurious exit 1 with zero real errors, a ddev-exec/PHPStan
+process-exit interaction, not a Drupal 10 or vanilla-flavour defect; running
+the identical command through a shell (ddev exec bash -c "...") returns the
+correct exit 0. Needs a proper fix or workaround in the Makefile if it
+recurs.
 
 ## Start prompt
 
