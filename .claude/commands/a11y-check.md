@@ -6,7 +6,7 @@ arguments: "[url-or-path ...]"
 
 # Accessibility Check
 
-Audit one or more pages of `{{DDEV_URL}}` for accessibility. If paths are given as arguments, test those. Otherwise test a representative set of page types the `{{MODULE_NAME}}` module affects (at minimum: the front page, one listing page, one detail page, and one page with a form).
+Audit one or more pages of `{{DDEV_URL}}` for accessibility. If paths are given as arguments, test those. Otherwise test a representative set of page types {{MODULE_AFFECTS}} (at minimum: the front page, one listing page, one detail page, and one page with a form).
 
 Public sector context: legal minimum is WCAG 2.1 AA (EN 301 549); test to WCAG 2.2 AA. Before fixing anything found here, consult the drupal-expert or drupal-localgov skill so fixes are made the Drupal way (Twig templates and render arrays, not JS patches), and finish by running the drupal-reviewer agent on the changed files.
 
