@@ -106,17 +106,33 @@ jobs:
             echo "No Unit/Kernel tests found under {{MODULE_PATH}}; skipping."
           fi
 
+      - name: Check for JS/CSS files
+        id: frontend_check
+        run: |
+          if find {{MODULE_PATH}} \( -name '*.js' -o -name '*.css' \) -print -quit | grep -q .; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "No .js or .css files found under {{MODULE_PATH}}; skipping ESLint/Stylelint setup."
+          fi
+
       - name: Set up Node
+        if: steps.frontend_check.outputs.found == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
       - name: Install Drupal core's frontend dependencies
-        run: npm ci --prefix web/core
+        if: steps.frontend_check.outputs.found == 'true'
+        run: |
+          cd web/core
+          corepack enable
+          yarn install
 
       - name: ESLint (Drupal core config)
+        if: steps.frontend_check.outputs.found == 'true'
         run: |
-          if find {{MODULE_PATH}} -name '*.js' -print -quit | grep -q .; then
+          if find {{MODULE_PATH}} \( -name '*.js' -o -name '*.yml' \) -print -quit | grep -q .; then
             node web/core/node_modules/.bin/eslint {{MODULE_PATH}} \
               --no-error-on-unmatched-pattern \
               --ignore-pattern='*.es6.js' \
@@ -124,10 +140,11 @@ jobs:
               --ext=.js,.yml \
               -c web/core/.eslintrc.passing.json
           else
-            echo "No .js files found under {{MODULE_PATH}}; skipping eslint."
+            echo "No .js or .yml files found under {{MODULE_PATH}}; skipping eslint."
           fi
 
       - name: Stylelint (Drupal core config)
+        if: steps.frontend_check.outputs.found == 'true'
         run: |
           if find {{MODULE_PATH}} -name '*.css' -print -quit | grep -q .; then
             web/core/node_modules/.bin/stylelint --config web/core/.stylelintrc.json "{{MODULE_PATH}}/**/*.css"

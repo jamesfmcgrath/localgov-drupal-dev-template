@@ -79,8 +79,12 @@ it alongside this file when planning work.
   config requires (color-hex-length: short); this is a known, verified gap
   with no config fix, write short hex or run stylelint --fix. GitHub
   Actions ci.yml mirrors the same three checks (CSpell in the prettier job,
-  ESLint/Stylelint in the php job after composer install). Nightwatch has
-  no local equivalent and stays CI-only, same category as the a11y job.
+  ESLint/Stylelint in the php job after composer install). Nightwatch and
+  Composer Lint have no local or GitHub Actions equivalent and stay
+  CI-only, same category as the a11y job. cspell.json and
+  .cspell-project-words.txt live at this template's root; `make module-ci`
+  does not copy them, so a module split into its own drupalcode repo needs
+  its own copies for full parity on that job.
 - Agent resources: agr.toml installs drupal-expert, ddev-expert, and
   drupal-localgov (from jamesfmcgrath/drupal-agent-resources). Standards live in
   AGENTS.md, the single source of truth; CLAUDE.md is only the @AGENTS.md import
@@ -161,8 +165,8 @@ lint-css (Drupal core's own ESLint/Stylelint config and binaries from
 web/core/node_modules), all wired into make check. GitHub Actions ci.yml
 mirrors the same three checks. Actually running make lint-js/lint-css, and
 the GitHub Actions eslint/stylelint steps end to end, needs a live DDEV
-project with web/core's own npm dependencies installed (`npm ci --prefix
-web/core` or the DDEV equivalent), which is outside this stage's scope and
+project with web/core's own frontend dependencies installed (`cd web/core &&
+corepack enable && yarn install`, or the DDEV equivalent), which is outside this stage's scope and
 still needs live verification, same caveat as the rest of this template's
 DDEV-dependent tooling. Nightwatch (browser JS tests) has no local
 equivalent and stays CI-only.

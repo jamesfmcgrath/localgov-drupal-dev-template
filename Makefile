@@ -83,7 +83,9 @@ spell: ## Spell-check the module with cspell
 	fi
 
 lint-js: ## Lint module JS/YAML with Drupal core's ESLint config
-	@if find $(MODULE) -name '*.js' -print -quit | grep -q .; then \
+	@if [ ! -d web/core/node_modules ]; then \
+	  echo "web/core/node_modules not found; run: ddev exec sh -c \"cd web/core && corepack enable && yarn install\""; \
+	elif find $(MODULE) \( -name '*.js' -o -name '*.yml' \) -print -quit | grep -q .; then \
 	  ddev exec node web/core/node_modules/.bin/eslint $(MODULE) \
 	    --no-error-on-unmatched-pattern \
 	    --ignore-pattern='*.es6.js' \
@@ -91,11 +93,13 @@ lint-js: ## Lint module JS/YAML with Drupal core's ESLint config
 	    --ext=.js,.yml \
 	    -c web/core/.eslintrc.passing.json; \
 	else \
-	  echo "No .js files found under $(MODULE); skipping eslint."; \
+	  echo "No .js or .yml files found under $(MODULE); skipping eslint."; \
 	fi
 
 lint-css: ## Lint module CSS with Drupal core's Stylelint config
-	@if find $(MODULE) -name '*.css' -print -quit | grep -q .; then \
+	@if [ ! -d web/core/node_modules ]; then \
+	  echo "web/core/node_modules not found; run: ddev exec sh -c \"cd web/core && corepack enable && yarn install\""; \
+	elif find $(MODULE) -name '*.css' -print -quit | grep -q .; then \
 	  ddev exec web/core/node_modules/.bin/stylelint --config web/core/.stylelintrc.json "$(MODULE)/**/*.css"; \
 	else \
 	  echo "No .css files found under $(MODULE); skipping stylelint."; \
