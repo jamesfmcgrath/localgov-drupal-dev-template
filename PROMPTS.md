@@ -27,7 +27,7 @@ expressions must never be touched.
 - Stage 5, Drupal CMS flavour: OPEN (prompt below).
 - Stage 6, template regression suite: OPEN (prompt below). Recommended order:
   6 before 5, so the CMS flavour lands with regression cover.
-- Also open: vanilla + Drupal 10 live run (see PROJECT.md status).
+- Also open: vanilla + Drupal 10 live run (prompt below).
 
 ---
 
@@ -131,4 +131,45 @@ by the manual smoke-test convention in PROJECT.md. Automate that convention.
    confirm the suite fails, revert) so the failure path is proven, not assumed.
 No em dashes. Scripts stay 100755. GitHub Actions ${{ }} expressions untouched
 except where the new job legitimately uses them.
+```
+
+---
+
+## Vanilla + Drupal 10 live run
+
+Requires Docker and DDEV running locally.
+
+```
+Run the vanilla + Drupal 10 live verification for this template. Work from a
+throwaway copy so the template itself stays untouched.
+
+1. Copy the repo to a temp dir (exclude .git and any _to_delete). In the copy
+   run ./scripts/init.sh with: module name vanilla10_smoke, defaults for
+   label, path, repo URL (blank), DDEV name, URL, client, and skill fork;
+   flavour vanilla; version 10.
+2. Verify the tokeniser result before spinning up: DRUPAL_TYPE=drupal10,
+   COMPOSER_PROJECT=drupal/recommended-project:^10, INSTALL_PROFILE=standard;
+   no leftover {{UPPER_SNAKE}} tokens outside PROJECT.md; ${{ }} expressions
+   intact in ci.yml; setup.sh and install-drupal still executable; init.sh
+   and TEMPLATE.md removed themselves.
+3. Run ./scripts/setup.sh and let it do the full spin-up. Watch specifically
+   for the two vanilla bugs fixed on the Drupal 11 run holding here too:
+   drush/drush gets installed (vanilla does not bundle it) and the
+   dev-tooling composer require resolves with -W against
+   drupal/recommended-project:^10.
+4. Confirm the site is actually up: ddev drush status reports Drupal 10.x
+   with a successful database bootstrap, and the front page returns 200.
+5. Run make check in the spun-up project to prove the quality toolchain on
+   Drupal 10 (phpcs, phpstan, phpunit, twig-lint). Empty module test suites
+   may skip; report that as skipped, not green.
+6. Report pass/fail per phase. If Docker or DDEV is unavailable, stop after
+   step 2 and say the spin-up still needs a live run. Do not claim success
+   you did not observe.
+7. On a full pass, in the REAL repo (not the throwaway): update PROJECT.md's
+   Status section to record vanilla + Drupal 10 verified with today's date
+   and drop its "not yet live-run" caveat, and update the matching line in
+   the Status section of PROMPTS.md. If scripts/test-template.sh exists,
+   confirm the vanilla 10 combo is present in COMBOS.
+8. Clean up: ddev delete -Oy the test project and remove the temp dir.
+No em dashes.
 ```
