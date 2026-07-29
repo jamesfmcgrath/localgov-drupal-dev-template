@@ -34,7 +34,7 @@ touched.
   run.
 - Stage 8, drupal.org pipeline parity: DONE. assets/module.gitlab-ci.yml,
   make module-ci, and local parity targets (spell, lint-js, lint-css) landed;
-  see PROJECT.md Status for the SKIP_TWIG_CS_FIXER and hex-color caveats
+  see PROJECT.md for the SKIP_TWIG_CS_FIXER and hex-color caveats
   found during implementation. The DDEV/npm spin-up for lint-js/lint-css
   still needs a live run.
 - Vanilla + Drupal 10 live run: DONE (2026-07-29; site installs and boots on
