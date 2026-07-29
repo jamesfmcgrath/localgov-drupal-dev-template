@@ -5,6 +5,7 @@
 
 .PHONY: help start stop restart open logs si install enable cr \
         test lint lint-fix stan check format format-check twig-lint twig-fix \
+        spell lint-js lint-css module-ci \
         mod-log mod-status mod-fetch mod-branch tag switch mr \
         guard-module-name guard-module-git
 
@@ -81,6 +82,16 @@ format: ## Format front-end assets with Prettier (CSS/JS/JSON/YAML/MD)
 
 format-check: ## Check Prettier formatting without writing
 	ddev exec npx prettier --check "$(MODULE)/**/*.{css,js,json,yml,yaml,md}"
+
+## == drupal.org pipeline parity ===============================================
+
+module-ci: guard-module-name ## Copy the drupal.org GitLab CI pipeline into the module
+	@if [ -f "$(MODULE)/.gitlab-ci.yml" ]; then \
+	  echo "$(MODULE)/.gitlab-ci.yml already exists, not overwriting."; \
+	  exit 1; \
+	fi
+	cp assets/module.gitlab-ci.yml "$(MODULE)/.gitlab-ci.yml"
+	@echo "Copied assets/module.gitlab-ci.yml to $(MODULE)/.gitlab-ci.yml"
 
 ## == Maintainer (module git) ==================================================
 
