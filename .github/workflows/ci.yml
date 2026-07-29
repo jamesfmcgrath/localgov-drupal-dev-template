@@ -28,6 +28,18 @@ jobs:
             echo "run=false" >> "$GITHUB_OUTPUT"
           fi
 
+  # Runs only on the bare template (composer.json absent), the inverse of the
+  # guard above. Gives the template repo itself a green, meaningful CI run
+  # instead of a run that skips everything.
+  template:
+    name: Template regression suite
+    needs: guard
+    if: needs.guard.outputs.run == 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./scripts/test-template.sh
+
   php:
     name: PHP lint, static analysis, tests
     needs: guard
