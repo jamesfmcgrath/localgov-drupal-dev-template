@@ -1,12 +1,12 @@
 # Drupal Development Guidelines
 
-This is a Drupal 10/11 project, the `{{MODULE_NAME}}` module for {{CLIENT}}. Follow these guidelines when working on Drupal code.
+This is a Drupal 10/11 project{{MODULE_INTRO}}. Follow these guidelines when working on Drupal code.
 
 This file is the single source of truth for AI coding tools. Cursor reads it natively; Claude Code loads it via the `@AGENTS.md` import in `CLAUDE.md`. Edit this file, not the stub.
 
 ## Project Context
 
-- **Module:** `{{MODULE_PATH}}/`
+- **Module:** {{MODULE_LINE}}
 - **DDEV:** `{{DDEV_NAME}}` at `{{DDEV_URL}}` (PHP 8.3, nginx-fpm)
 - **Stack:** Drupal 10.2+, LocalGov Drupal (LGD)
 - **Do not use git worktrees**, work directly in the repo on the feature branch
