@@ -64,6 +64,23 @@ it alongside this file when planning work.
   to the jobs above; the bare template runs a "template" job instead
   (scripts/test-template.sh), so the template repo gets a real, green CI run
   instead of one that skips everything.
+- drupal.org pipeline parity: assets/module.gitlab-ci.yml ships the canonical
+  gitlab_templates include block (three files: main, variables, workflows)
+  plus a documented variables block. `make module-ci` copies it to
+  $(MODULE)/.gitlab-ci.yml, refusing if one exists. Twig CS Fixer defaults to
+  SKIPPED upstream (SKIP_TWIG_CS_FIXER: '1'); the shipped file overrides it
+  to '0' since this template already lints Twig locally and in GitHub
+  Actions. Local parity: cspell.json + .cspell-project-words.txt at the
+  template root wired to `make spell`; `make lint-js` and `make lint-css`
+  reuse Drupal core's own installed ESLint/Stylelint config and binaries
+  from web/core/node_modules, the same approach the drupalcode CI jobs use,
+  guarded to skip with a message when the module has no .js/.css files.
+  Prettier's CSS output does not shorten hex colors, which core's Stylelint
+  config requires (color-hex-length: short); this is a known, verified gap
+  with no config fix, write short hex or run stylelint --fix. GitHub
+  Actions ci.yml mirrors the same three checks (CSpell in the prettier job,
+  ESLint/Stylelint in the php job after composer install). Nightwatch has
+  no local equivalent and stays CI-only, same category as the a11y job.
 - Agent resources: agr.toml installs drupal-expert, ddev-expert, and
   drupal-localgov (from jamesfmcgrath/drupal-agent-resources). Standards live in
   AGENTS.md, the single source of truth; CLAUDE.md is only the @AGENTS.md import
@@ -134,6 +151,21 @@ Stage 7, optional module (site-only mode): tokeniser and file-invariant work
 DONE, covered by scripts/test-template.sh's site-only regression check; the
 full site-only DDEV/composer spin-up still needs a live run, same caveat as
 the rest of setup.sh.
+Stage 8, drupal.org (GitLab CI) pipeline parity: DONE. assets/module.gitlab-ci.yml
+ships the canonical include block plus a variables block that turns Twig CS
+Fixer back on (it defaults to skipped upstream, a fact confirmed directly
+against the live gitlab_templates source, not assumed from the Stage 8
+prompt text). make module-ci copies it into the module. Local parity added:
+make spell (cspell.json + .cspell-project-words.txt), make lint-js and make
+lint-css (Drupal core's own ESLint/Stylelint config and binaries from
+web/core/node_modules), all wired into make check. GitHub Actions ci.yml
+mirrors the same three checks. Actually running make lint-js/lint-css, and
+the GitHub Actions eslint/stylelint steps end to end, needs a live DDEV
+project with web/core's own npm dependencies installed (`npm ci --prefix
+web/core` or the DDEV equivalent), which is outside this stage's scope and
+still needs live verification, same caveat as the rest of this template's
+DDEV-dependent tooling. Nightwatch (browser JS tests) has no local
+equivalent and stays CI-only.
 
 ## Start prompt
 

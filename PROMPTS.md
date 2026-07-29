@@ -32,7 +32,11 @@ touched.
   Makefile all support a blank module name; scripts/test-template.sh gained a
   site-only regression check. The DDEV/composer spin-up still needs a live
   run.
-- Stage 8, drupal.org pipeline parity: OPEN (prompt below).
+- Stage 8, drupal.org pipeline parity: DONE. assets/module.gitlab-ci.yml,
+  make module-ci, and local parity targets (spell, lint-js, lint-css) landed;
+  see PROJECT.md Status for the SKIP_TWIG_CS_FIXER and hex-color caveats
+  found during implementation. The DDEV/npm spin-up for lint-js/lint-css
+  still needs a live run.
 - Vanilla + Drupal 10 live run: DONE (2026-07-29; site installs and boots on
   Drupal 10.6.14, both vanilla setup bugs from Stage 4 hold fixed, make check
   passes: phpcs/phpunit/twig-cs-fixer clean, empty module test suite skips as

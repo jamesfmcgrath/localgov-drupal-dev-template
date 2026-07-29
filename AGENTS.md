@@ -79,5 +79,5 @@ Install once via `./scripts/setup.sh` (see README).
 ## Working Rules
 
 - Work incrementally: small, self-contained changes, tested as you go.
-- Any PHP change ships with PHPUnit tests confirming correct behaviour; run the module test suite plus `phpcbf` then `phpcs` before considering a change done.
+- Any PHP change ships with PHPUnit tests confirming correct behaviour; run the module test suite plus `phpcbf` then `phpcs` before considering a change done. PHP and front-end changes must pass `make check`, which mirrors the git.drupalcode.org default validation pipeline (phpcs, phpstan, twig-cs-fixer, cspell, eslint, stylelint).
 - No em dashes in output. No code comments unless essential.

@@ -10,6 +10,7 @@ A starting point for working locally on a Drupal 10/11 module or site, with Clau
 - A DDEV config and a one-command `scripts/setup.sh` that starts DDEV, scaffolds a Drupal project (LocalGov or vanilla, chosen at init), installs the site, adds dev tooling, and enables your module if you configured one (site-only projects skip that step).
 - PHP tooling wired to the Makefile: PHPCS (Drupal, DrupalPractice), PHPStan (phpstan-drupal), PHPUnit, Twig CS Fixer for Twig templates (Prettier does not lint Twig), plus Prettier for front-end assets.
 - A GitHub Actions CI workflow (`.github/workflows/ci.yml`) running PHPCS, PHPStan, Twig CS Fixer, PHPUnit (unit + kernel), the Prettier check, and a pa11y-ci accessibility job (WCAG2AA, against an installed sqlite site) on push and pull request.
+- drupal.org (git.drupalcode.org) pipeline parity: `assets/module.gitlab-ci.yml` is a ready `.gitlab-ci.yml` for the module, copied in with `make module-ci`. Local tooling mirrors the same pipeline's default validation jobs, cspell (`make spell`), ESLint and Stylelint (`make lint-js`, `make lint-css`) using Drupal core's own configs, alongside the existing PHPCS/PHPStan/Twig CS Fixer, so `make check` predicts what runs there. Twig CS Fixer is skipped by default upstream; the shipped pipeline turns it back on to match this template's local tooling. Nightwatch (browser JS tests) has no local equivalent and stays CI-only.
 - A `scripts/test-template.sh` regression suite that exercises `init.sh` across every supported flavour/version combo, wired into CI so the bare template gets a real, green run instead of skipping everything.
 - A `scripts/init.sh` that turns the template into your project by filling in a handful of tokens.
 
@@ -78,8 +79,9 @@ make si            # Fresh LocalGov install
 make enable        # Enable the module
 make cr            # Clear caches
 make test          # PHPUnit (also lint / lint-fix / stan)
-make check         # lint + stan + test + twig-lint
+make check         # lint + stan + test + twig-lint + spell + lint-js + lint-css
 make twig-lint     # Lint Twig templates (also twig-fix)
+make module-ci      # Copy the drupal.org GitLab CI pipeline into the module
 make format        # Prettier format front-end assets (also format-check)
 make mod-status    # Module git status (also mod-log / mod-fetch / mod-branch)
 make switch BRANCH=1.0.x     # also: make mr MR=123, make tag VERSION=1.0.0-alpha1
