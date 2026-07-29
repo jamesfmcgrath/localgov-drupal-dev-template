@@ -67,10 +67,20 @@ jobs:
         run: composer install --no-interaction --no-progress
 
       - name: PHPCS (Drupal, DrupalPractice)
-        run: vendor/bin/phpcs
+        run: |
+          if find {{MODULE_PATH}} -type f -print -quit | grep -q .; then
+            vendor/bin/phpcs
+          else
+            echo "No files found under {{MODULE_PATH}}; skipping phpcs."
+          fi
 
       - name: PHPStan
-        run: vendor/bin/phpstan analyse --no-progress
+        run: |
+          if find {{MODULE_PATH}} -type f -print -quit | grep -q .; then
+            vendor/bin/phpstan analyse --no-progress
+          else
+            echo "No files found under {{MODULE_PATH}}; skipping phpstan."
+          fi
 
       - name: Twig CS Fixer
         run: |
