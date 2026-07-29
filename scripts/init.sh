@@ -15,8 +15,8 @@ FILES=(AGENTS.md agr.toml README.md TEMPLATE.md .gitignore Makefile \
   scripts/setup.sh .claude/settings.local.json.dist .claude/commands/a11y-check.md \
   .ddev/config.yaml phpcs.xml.dist phpstan.neon package.json .github/workflows/ci.yml)
 
-if ! grep -q "{{MODULE_NAME}}" AGENTS.md 2>/dev/null; then
-  warn "Already initialised (no {{MODULE_NAME}} token in AGENTS.md). Aborting."
+if ! grep -q "{{MODULE_INTRO}}" AGENTS.md 2>/dev/null; then
+  warn "Already initialised (no {{MODULE_INTRO}} token in AGENTS.md). Aborting."
   exit 1
 fi
 
@@ -27,13 +27,20 @@ ask() { # ask <prompt> <default> -> echoes answer
 }
 
 echo ""; info "Initialise this template"; echo ""
-MODULE_NAME="$(ask 'Module machine name (e.g. localgov_bus_data)' '')"
-[ -n "$MODULE_NAME" ] || { warn "Module name is required."; exit 1; }
-DEF_LABEL="$(echo "$MODULE_NAME" | tr '_' ' ' | awk '{for(i=1;i<=NF;i++)$i=toupper(substr($i,1,1))substr($i,2)}1')"
-MODULE_LABEL="$(ask 'Module label' "$DEF_LABEL")"
-MODULE_PATH="$(ask 'Module path' "web/modules/custom/$MODULE_NAME")"
-MODULE_REPO="$(ask 'Module git URL (blank to skip cloning)' '')"
-DEF_DDEV="$(echo "$MODULE_NAME" | tr '_' '-')-dev"
+MODULE_NAME="$(ask 'Module machine name (blank for a site-only project)' '')"
+
+if [ -n "$MODULE_NAME" ]; then
+  DEF_LABEL="$(echo "$MODULE_NAME" | tr '_' ' ' | awk '{for(i=1;i<=NF;i++)$i=toupper(substr($i,1,1))substr($i,2)}1')"
+  MODULE_LABEL="$(ask 'Module label' "$DEF_LABEL")"
+  MODULE_PATH="$(ask 'Module path' "web/modules/custom/$MODULE_NAME")"
+  MODULE_REPO="$(ask 'Module git URL (blank to skip cloning)' '')"
+  DEF_DDEV="$(echo "$MODULE_NAME" | tr '_' '-')-dev"
+else
+  MODULE_LABEL=""
+  MODULE_PATH="web/modules/custom"
+  MODULE_REPO=""
+  DEF_DDEV="site-dev"
+fi
 DDEV_NAME="$(ask 'DDEV project name' "$DEF_DDEV")"
 DDEV_URL="$(ask 'DDEV site URL' "https://$DDEV_NAME.ddev.site")"
 CLIENT="$(ask 'Client / context' 'a local council')"
@@ -61,6 +68,21 @@ case "$FLAVOUR" in
     ;;
 esac
 
+# Prose fragments that read naturally whether or not a module is configured.
+if [ -n "$MODULE_NAME" ]; then
+  MODULE_INTRO=", the \`$MODULE_NAME\` module for $CLIENT"
+  MODULE_LINE="\`$MODULE_PATH/\`"
+  MODULE_AFFECTS="the \`$MODULE_NAME\` module affects"
+  PACKAGE_NAME="${MODULE_NAME}-dev"
+  PACKAGE_DESCRIPTION="Front-end tooling for $MODULE_NAME ($CLIENT)."
+else
+  MODULE_INTRO=" for $CLIENT"
+  MODULE_LINE="none yet, site-only project"
+  MODULE_AFFECTS="the site includes"
+  PACKAGE_NAME="$DDEV_NAME"
+  PACKAGE_DESCRIPTION="Front-end tooling for $CLIENT."
+fi
+
 echo ""; info "Applying..."
 sub() { # sub <token> <value>
   local token="$1" value="$2" f tmp
@@ -71,11 +93,16 @@ sub() { # sub <token> <value>
     sed "s|{{$token}}|$value|g" "$f" > "$tmp" && cat "$tmp" > "$f" && rm -f "$tmp"
   done
 }
-sub MODULE_NAME      "$MODULE_NAME"
-sub MODULE_LABEL     "$MODULE_LABEL"
-sub MODULE_PATH      "$MODULE_PATH"
-sub MODULE_REPO      "$MODULE_REPO"
-sub DDEV_NAME        "$DDEV_NAME"
+sub MODULE_NAME         "$MODULE_NAME"
+sub MODULE_LABEL        "$MODULE_LABEL"
+sub MODULE_PATH         "$MODULE_PATH"
+sub MODULE_REPO         "$MODULE_REPO"
+sub MODULE_INTRO        "$MODULE_INTRO"
+sub MODULE_LINE         "$MODULE_LINE"
+sub MODULE_AFFECTS      "$MODULE_AFFECTS"
+sub PACKAGE_NAME        "$PACKAGE_NAME"
+sub PACKAGE_DESCRIPTION "$PACKAGE_DESCRIPTION"
+sub DDEV_NAME           "$DDEV_NAME"
 sub DDEV_URL         "$DDEV_URL"
 sub CLIENT           "$CLIENT"
 sub SKILL_FORK       "$SKILL_FORK"
@@ -85,9 +112,16 @@ sub COMPOSER_PROJECT "$COMPOSER_PROJECT"
 
 rm -f TEMPLATE.md scripts/test-template.sh
 chmod +x scripts/setup.sh scripts/install-drupal 2>/dev/null || true
-ok "Tokens applied ($FLAVOUR, Drupal $VERSION)."
+if [ -n "$MODULE_NAME" ]; then
+  ok "Tokens applied ($FLAVOUR, Drupal $VERSION, module $MODULE_NAME)."
+else
+  ok "Tokens applied ($FLAVOUR, Drupal $VERSION, site-only)."
+fi
 info "Removing initialiser (scripts/init.sh)..."
 rm -f scripts/init.sh
 ok "Done. Next: ./scripts/setup.sh"
 echo ""
+if [ -z "$MODULE_NAME" ]; then
+  warn "Site-only project: to add a module later, create it under web/modules/custom/ and set MODULE and MODULE_NAME in the Makefile."
+fi
 warn "Review the git diff, then commit: git add -A && git commit -m 'Initialise from template'"
