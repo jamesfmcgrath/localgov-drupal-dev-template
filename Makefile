@@ -1,13 +1,15 @@
 ##
-## {{DDEV_NAME}} - dev environment for the {{MODULE_NAME}} module
+## {{DDEV_NAME}} - dev environment
 ## Usage: make <target>
 ##
 
 .PHONY: help start stop restart open logs si install enable cr \
         test lint lint-fix stan check format format-check twig-lint twig-fix \
-        mod-log mod-status mod-fetch mod-branch tag switch mr
+        mod-log mod-status mod-fetch mod-branch tag switch mr \
+        guard-module-name guard-module-git
 
 MODULE = {{MODULE_PATH}}
+MODULE_NAME = {{MODULE_NAME}}
 
 ## == Environment ==============================================================
 
@@ -39,8 +41,14 @@ si: ## Fresh Drupal install (LocalGov profile)
 install: ## Clean install, choose a profile (Standard/LocalGov/Microsites/...)
 	./scripts/install-drupal
 
-enable: ## Enable the {{MODULE_NAME}} module
-	ddev drush en {{MODULE_NAME}} -y
+guard-module-name:
+	@if [ -z "$(MODULE_NAME)" ]; then \
+	  echo "No module configured (site-only project). Add one under web/modules/custom/ and set MODULE_NAME in the Makefile."; \
+	  exit 1; \
+	fi
+
+enable: guard-module-name ## Enable the module
+	ddev drush en $(MODULE_NAME) -y
 	ddev drush cr
 
 cr: ## Clear Drupal caches
@@ -76,31 +84,37 @@ format-check: ## Check Prettier formatting without writing
 
 ## == Maintainer (module git) ==================================================
 
-mod-log: ## Recent module commits (usage: make mod-log or make mod-log N=40)
+guard-module-git:
+	@if [ -z "$(MODULE_NAME)" ] || [ ! -d "$(MODULE)/.git" ]; then \
+	  echo "No module git checkout to operate on (site-only project)."; \
+	  exit 1; \
+	fi
+
+mod-log: guard-module-git ## Recent module commits (usage: make mod-log or make mod-log N=40)
 	git -C $(MODULE) log --oneline -$${N:-20}
 
-mod-status: ## Git status of the module
+mod-status: guard-module-git ## Git status of the module
 	git -C $(MODULE) status
 
-mod-fetch: ## Fetch latest from upstream
+mod-fetch: guard-module-git ## Fetch latest from upstream
 	git -C $(MODULE) fetch origin
 	@echo ""
 	@git -C $(MODULE) log --oneline -5 origin/$$(git -C $(MODULE) rev-parse --abbrev-ref HEAD)
 
-mod-branch: ## List branches and show current
+mod-branch: guard-module-git ## List branches and show current
 	git -C $(MODULE) branch -av
 
-tag: ## Tag and push a release  (usage: make tag VERSION=1.0.0-alpha1)
+tag: guard-module-git ## Tag and push a release  (usage: make tag VERSION=1.0.0-alpha1)
 	@test -n "$(VERSION)" || (echo "Usage: make tag VERSION=1.0.0-alpha1" && exit 1)
 	git -C $(MODULE) tag $(VERSION)
 	git -C $(MODULE) push origin $(VERSION)
 	@echo "Tagged and pushed $(VERSION)"
 
-switch: ## Switch module branch  (usage: make switch BRANCH=1.0.x)
+switch: guard-module-git ## Switch module branch  (usage: make switch BRANCH=1.0.x)
 	@test -n "$(BRANCH)" || (echo "Usage: make switch BRANCH=1.0.x" && exit 1)
 	git -C $(MODULE) checkout $(BRANCH)
 
-mr: ## Check out a contributor MR for review  (usage: make mr MR=123)
+mr: guard-module-git ## Check out a contributor MR for review  (usage: make mr MR=123)
 	@test -n "$(MR)" || (echo "Usage: make mr MR=123" && exit 1)
 	git -C $(MODULE) fetch origin merge-requests/$(MR)/head:mr-$(MR)
 	git -C $(MODULE) checkout mr-$(MR)
