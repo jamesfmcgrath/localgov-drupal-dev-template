@@ -107,17 +107,21 @@ if [ -f "package.json" ]; then
 fi
 
 # --- Optional: clone the target module ---
-if [ -n "${MODULE_REPO}" ] && [ ! -d "${MODULE_PATH}" ]; then
-  info "Cloning module into ${MODULE_PATH}..."
-  mkdir -p "$(dirname "${MODULE_PATH}")"
-  git clone "${MODULE_REPO}" "${MODULE_PATH}" && success "Module cloned." || warn "Module clone failed; clone manually."
+if [ -n "${MODULE_NAME}" ]; then
+  if [ -n "${MODULE_REPO}" ] && [ ! -d "${MODULE_PATH}" ]; then
+    info "Cloning module into ${MODULE_PATH}..."
+    mkdir -p "$(dirname "${MODULE_PATH}")"
+    git clone "${MODULE_REPO}" "${MODULE_PATH}" && success "Module cloned." || warn "Module clone failed; clone manually."
+  fi
+else
+  info "Site-only project: skipping module clone and enable."
 fi
 
 # --- Install the site ---
 if [ "$SKIP_INSTALL" -eq 0 ]; then
   info "Installing Drupal (profile: ${INSTALL_PROFILE})..."
   ./scripts/install-drupal "${INSTALL_PROFILE}"
-  if [ -d "${MODULE_PATH}" ]; then
+  if [ -n "${MODULE_NAME}" ] && [ -d "${MODULE_PATH}" ]; then
     info "Enabling ${MODULE_NAME}..."
     ddev drush en "${MODULE_NAME}" -y && ddev drush cr && success "${MODULE_NAME} enabled."
   fi
