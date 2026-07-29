@@ -28,7 +28,10 @@ touched.
 - Stage 6, template regression suite: DONE. scripts/test-template.sh, wired
   into CI as the "template" job (runs when the guard job's composer.json
   check is false).
-- Stage 7, optional module (site-only mode): OPEN (prompt below).
+- Stage 7, optional module (site-only mode): DONE. init.sh, setup.sh, and the
+  Makefile all support a blank module name; scripts/test-template.sh gained a
+  site-only regression check. The DDEV/composer spin-up still needs a live
+  run.
 - Stage 8, drupal.org pipeline parity: OPEN (prompt below).
 - Vanilla + Drupal 10 live run: DONE (2026-07-29; site installs and boots on
   Drupal 10.6.14, both vanilla setup bugs from Stage 4 hold fixed, make check

@@ -7,7 +7,7 @@ A starting point for working locally on a Drupal 10/11 module or site, with Clau
 - Claude Code + Cursor agent resources installed reproducibly via [`agr`](https://github.com/kasperjunge/agent-resources): `drupal-expert`, `ddev-expert`, and `drupal-localgov` skills, plus the `drupal-reviewer` agent.
 - Shared coding, review, and accessibility standards in a single `AGENTS.md` (read natively by Cursor and most agents; Claude Code loads it via the `@AGENTS.md` import in the `CLAUDE.md` stub).
 - An accessibility audit workflow (`.claude/commands/a11y-check.md`): axe-core scan plus keyboard, reflow, and motion passes, aimed at WCAG 2.2 AA (the public sector legal floor is WCAG 2.1 AA / EN 301 549).
-- A DDEV config and a one-command `scripts/setup.sh` that starts DDEV, scaffolds a Drupal project (LocalGov or vanilla, chosen at init), installs the site, adds dev tooling, and enables your module.
+- A DDEV config and a one-command `scripts/setup.sh` that starts DDEV, scaffolds a Drupal project (LocalGov or vanilla, chosen at init), installs the site, adds dev tooling, and enables your module if you configured one (site-only projects skip that step).
 - PHP tooling wired to the Makefile: PHPCS (Drupal, DrupalPractice), PHPStan (phpstan-drupal), PHPUnit, Twig CS Fixer for Twig templates (Prettier does not lint Twig), plus Prettier for front-end assets.
 - A GitHub Actions CI workflow (`.github/workflows/ci.yml`) running PHPCS, PHPStan, Twig CS Fixer, PHPUnit (unit + kernel), the Prettier check, and a pa11y-ci accessibility job (WCAG2AA, against an installed sqlite site) on push and pull request.
 - A `scripts/test-template.sh` regression suite that exercises `init.sh` across every supported flavour/version combo, wired into CI so the bare template gets a real, green run instead of skipping everything.
@@ -37,7 +37,7 @@ A starting point for working locally on a Drupal 10/11 module or site, with Clau
    ./scripts/init.sh
    ```
 
-   It asks for the module name and path, DDEV site, client, skill fork, and the Drupal flavour (`localgov` or `vanilla`) and version (`11` or `10`). It tokenises every file, then removes itself.
+   It asks for the module name (leave blank for a site-only project, which skips the module label/path/repo prompts) and path, DDEV site, client, skill fork, and the Drupal flavour (`localgov` or `vanilla`) and version (`11` or `10`). It tokenises every file, then removes itself.
 3. Spin the whole environment up with one command:
 
    ```bash
@@ -55,7 +55,7 @@ To reinstall or switch profile later, run `./scripts/install-drupal` (interactiv
 
 | Token | Example |
 |---|---|
-| `{{MODULE_NAME}}` | `localgov_bus_data` |
+| `{{MODULE_NAME}}` | `localgov_bus_data` (blank for a site-only project) |
 | `{{MODULE_LABEL}}` | `LocalGov Bus Data` |
 | `{{MODULE_PATH}}` | `web/modules/custom/localgov_bus_data` |
 | `{{MODULE_REPO}}` | `git@git.drupal.org:project/localgov_bus_data.git` |

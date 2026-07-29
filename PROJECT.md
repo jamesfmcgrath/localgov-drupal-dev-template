@@ -22,9 +22,14 @@ it alongside this file when planning work.
 
 - scripts/init.sh: one-time tokeniser. Prompts for module name/path, DDEV site,
   client, skill fork, and Drupal flavour (localgov|vanilla) + version (11|10).
-  Substitutes {{TOKENS}} across files, then removes itself, TEMPLATE.md, and
-  scripts/test-template.sh. Must preserve file executable bits (it writes back
-  into files rather than mv-ing a temp over them, and re-chmods the scripts).
+  A blank module name selects site-only mode (Stage 7): the label/path/repo
+  prompts are skipped, MODULE_PATH becomes web/modules/custom, and five
+  composed tokens (MODULE_INTRO, MODULE_LINE, MODULE_AFFECTS, PACKAGE_NAME,
+  PACKAGE_DESCRIPTION) keep AGENTS.md, a11y-check.md, and package.json reading
+  naturally either way. Substitutes {{TOKENS}} across files, then removes
+  itself, TEMPLATE.md, and scripts/test-template.sh. Must preserve file
+  executable bits (it writes back into files rather than mv-ing a temp over
+  them, and re-chmods the scripts).
 - scripts/test-template.sh: regression suite for the bare template. Copies the
   repo to a throwaway dir per supported flavour/version combo, pipes scripted
   answers into init.sh, and asserts the tokeniser and file invariants (no
@@ -83,6 +88,9 @@ Actions ${{ ... }} expressions must be left untouched.
 - Scripts must stay executable and be committed as 100755.
 - Keep both flavour branches (localgov, vanilla) and both versions (10, 11)
   working.
+- Keep both usage modes working: site-only (blank module name) and module
+  mode (a module name given). Module mode's behaviour must never change as a
+  side effect of site-only work, or vice versa.
 
 ### Working rules for any change
 
@@ -122,6 +130,10 @@ the jobs above), so the bare template repo now gets a real, green CI run
 instead of one that skips everything. The manual smoke-test convention in
 Working Rules has been replaced by this suite; the DDEV/composer spin-up
 still needs live verification, as before.
+Stage 7, optional module (site-only mode): tokeniser and file-invariant work
+DONE, covered by scripts/test-template.sh's site-only regression check; the
+full site-only DDEV/composer spin-up still needs a live run, same caveat as
+the rest of setup.sh.
 
 ## Start prompt
 
