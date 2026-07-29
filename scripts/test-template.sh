@@ -138,10 +138,61 @@ run_combo() {
   rm -rf "$tmp_dir"
 }
 
+run_site_only() {
+  local flavour="$1" version="$2"
+  local label="site-only $flavour $version"
+
+  echo ""
+  echo -e "${BOLD}== $label ==${RESET}"
+
+  local tmp_dir
+  tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/test-template-site.XXXXXX")"
+  rsync -a --exclude='.git' --exclude='_to_delete' "$REPO_ROOT"/ "$tmp_dir"/ >/dev/null
+
+  local init_log="$tmp_dir/.init-output.log"
+  if (cd "$tmp_dir" && printf '\n\n\n\n\n%s\n%s\n' "$flavour" "$version" | ./scripts/init.sh) >"$init_log" 2>&1; then
+    pass "$label: init.sh exits 0 with a blank module answer"
+  else
+    fail "$label: init.sh exited nonzero (see $init_log)"
+  fi
+
+  if [ ! -e "$tmp_dir/scripts/init.sh" ]; then
+    pass "$label: scripts/init.sh removed itself"
+  else
+    fail "$label: scripts/init.sh still present"
+  fi
+
+  local exclude_args=()
+  for ex in "${TOKEN_DOC_EXCEPTIONS[@]}"; do exclude_args+=(--exclude="$ex"); done
+  local leftover
+  leftover="$(grep -rlE '\{\{[A-Z_]+\}\}' "$tmp_dir" --exclude-dir=.git "${exclude_args[@]}" 2>/dev/null || true)"
+  if [ -z "$leftover" ]; then
+    pass "$label: no {{UPPER_SNAKE}} tokens remain outside ${TOKEN_DOC_EXCEPTIONS[*]}"
+  else
+    fail "$label: leftover tokens in: $(echo "$leftover" | tr '\n' ' ')"
+  fi
+
+  if (cd "$tmp_dir" && make -n help) >/dev/null 2>&1; then
+    pass "$label: Makefile parses (make -n help)"
+  else
+    fail "$label: Makefile failed to parse"
+  fi
+
+  if bash -n "$tmp_dir/scripts/setup.sh" 2>/dev/null; then
+    pass "$label: scripts/setup.sh bash -n"
+  else
+    fail "$label: scripts/setup.sh bash -n failed"
+  fi
+
+  rm -rf "$tmp_dir"
+}
+
 for combo in "${COMBOS[@]}"; do
   IFS='|' read -r flavour version drupal_type composer_project install_profile <<< "$combo"
   run_combo "$flavour" "$version" "$drupal_type" "$composer_project" "$install_profile"
 done
+
+run_site_only "localgov" "11"
 
 echo ""
 echo -e "${BOLD}== Summary ==${RESET}"
