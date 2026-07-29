@@ -75,6 +75,13 @@ twig-lint: ## Lint Twig templates
 twig-fix: ## Auto-fix Twig template violations
 	ddev exec vendor/bin/twig-cs-fixer lint $(MODULE) --fix
 
+spell: ## Spell-check the module with cspell
+	@if find $(MODULE) -type f -print -quit | grep -q .; then \
+	  ddev exec npx cspell --no-progress "$(MODULE)/**"; \
+	else \
+	  echo "No files found under $(MODULE); skipping cspell."; \
+	fi
+
 check: lint stan test twig-lint ## Run all quality checks (lint + stan + test + twig-lint)
 
 format: ## Format front-end assets with Prettier (CSS/JS/JSON/YAML/MD)

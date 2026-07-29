@@ -4,9 +4,11 @@
   "description": "{{PACKAGE_DESCRIPTION}}",
   "scripts": {
     "format": "prettier --write \"{{MODULE_PATH}}/**/*.{css,js,json,yml,yaml,md}\"",
-    "format:check": "prettier --check \"{{MODULE_PATH}}/**/*.{css,js,json,yml,yaml,md}\""
+    "format:check": "prettier --check \"{{MODULE_PATH}}/**/*.{css,js,json,yml,yaml,md}\"",
+    "spell": "cspell \"{{MODULE_PATH}}/**\""
   },
   "devDependencies": {
+    "cspell": "^10.0.1",
     "pa11y-ci": "^4.1.1",
     "prettier": "^3.3.0"
   }
