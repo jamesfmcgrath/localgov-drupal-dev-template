@@ -54,7 +54,7 @@ run_combo() {
 
   local tmp_dir
   tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/test-template.XXXXXX")"
-  rsync -a --exclude='.git' --exclude='_to_delete' "$REPO_ROOT"/ "$tmp_dir"/ >/dev/null
+  rsync -a --exclude='.git' --exclude='_to_delete' --exclude='.superpowers' --exclude='docs' --exclude='.claude/settings.local.json' "$REPO_ROOT"/ "$tmp_dir"/ >/dev/null
 
   local ci_before ci_after
   ci_before="$(grep -oF '${{' "$tmp_dir/.github/workflows/ci.yml" | wc -l | tr -d ' ')"
@@ -147,7 +147,7 @@ run_site_only() {
 
   local tmp_dir
   tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/test-template-site.XXXXXX")"
-  rsync -a --exclude='.git' --exclude='_to_delete' "$REPO_ROOT"/ "$tmp_dir"/ >/dev/null
+  rsync -a --exclude='.git' --exclude='_to_delete' --exclude='.superpowers' --exclude='docs' --exclude='.claude/settings.local.json' "$REPO_ROOT"/ "$tmp_dir"/ >/dev/null
 
   local init_log="$tmp_dir/.init-output.log"
   if (cd "$tmp_dir" && printf '\n\n\n\n\n%s\n%s\n' "$flavour" "$version" | ./scripts/init.sh) >"$init_log" 2>&1; then
