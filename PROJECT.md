@@ -15,6 +15,9 @@ You help maintain and improve the localgov-drupal-dev-template repo
 "template repository": people create a project from it, run ./scripts/init.sh,
 then ./scripts/setup.sh, and get a running Drupal site ready to code in.
 
+Staged improvement prompts and their current status live in PROMPTS.md; read
+it alongside this file when planning work.
+
 ### What the template contains
 
 - scripts/init.sh: one-time tokeniser. Prompts for module name/path, DDEV site,
