@@ -135,6 +135,21 @@ run_combo() {
   if yaml_parse "$tmp_dir/.github/workflows/ci.yml"; then pass "$label: ci.yml is valid YAML"; else fail "$label: ci.yml is not valid YAML"; fi
   if yaml_parse "$tmp_dir/.ddev/config.yaml"; then pass "$label: .ddev/config.yaml is valid YAML"; else fail "$label: .ddev/config.yaml is not valid YAML"; fi
 
+  # g. assets/module.gitlab-ci.yml is not a template file (no {{TOKENS}} inside
+  # it), so it must survive init.sh completely unchanged.
+  if diff -q "$REPO_ROOT/assets/module.gitlab-ci.yml" "$tmp_dir/assets/module.gitlab-ci.yml" >/dev/null 2>&1; then
+    pass "$label: assets/module.gitlab-ci.yml survives init.sh verbatim"
+  else
+    fail "$label: assets/module.gitlab-ci.yml changed or missing after init.sh"
+  fi
+
+  # h. make -n module-ci parses.
+  if (cd "$tmp_dir" && make -n module-ci) >/dev/null 2>&1; then
+    pass "$label: make -n module-ci parses"
+  else
+    fail "$label: make -n module-ci failed"
+  fi
+
   rm -rf "$tmp_dir"
 }
 
@@ -182,6 +197,18 @@ run_site_only() {
     pass "$label: scripts/setup.sh bash -n"
   else
     fail "$label: scripts/setup.sh bash -n failed"
+  fi
+
+  if diff -q "$REPO_ROOT/assets/module.gitlab-ci.yml" "$tmp_dir/assets/module.gitlab-ci.yml" >/dev/null 2>&1; then
+    pass "$label: assets/module.gitlab-ci.yml survives init.sh verbatim"
+  else
+    fail "$label: assets/module.gitlab-ci.yml changed or missing after init.sh"
+  fi
+
+  if (cd "$tmp_dir" && make -n module-ci) >/dev/null 2>&1; then
+    pass "$label: make -n module-ci parses (guard-module-name should reject cleanly)"
+  else
+    fail "$label: make -n module-ci failed"
   fi
 
   rm -rf "$tmp_dir"
