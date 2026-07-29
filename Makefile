@@ -94,7 +94,14 @@ lint-js: ## Lint module JS/YAML with Drupal core's ESLint config
 	  echo "No .js files found under $(MODULE); skipping eslint."; \
 	fi
 
-check: lint stan test twig-lint ## Run all quality checks (lint + stan + test + twig-lint)
+lint-css: ## Lint module CSS with Drupal core's Stylelint config
+	@if find $(MODULE) -name '*.css' -print -quit | grep -q .; then \
+	  ddev exec web/core/node_modules/.bin/stylelint --config web/core/.stylelintrc.json "$(MODULE)/**/*.css"; \
+	else \
+	  echo "No .css files found under $(MODULE); skipping stylelint."; \
+	fi
+
+check: lint stan test twig-lint spell lint-js lint-css ## Run all quality checks (lint + stan + test + twig-lint + spell + lint-js + lint-css)
 
 format: ## Format front-end assets with Prettier (CSS/JS/JSON/YAML/MD)
 	ddev exec npx prettier --write "$(MODULE)/**/*.{css,js,json,yml,yaml,md}"
