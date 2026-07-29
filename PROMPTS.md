@@ -5,11 +5,11 @@ Run open stages from the repo root unless noted. Companion to PROJECT.md,
 which holds the Claude Project instructions.
 
 Shared conventions (repeated so they survive pasting into a fresh session):
-no em dashes anywhere; scripts stay executable (100755); run the regression
-suite (or the manual smoke test until Stage 6 lands) before calling a script
-change done; keep all flavours and supported Drupal versions working; only
-{{UPPER_SNAKE}} names are template tokens and GitHub Actions ${{ }}
-expressions must never be touched.
+no em dashes anywhere; scripts stay executable (100755); run
+scripts/test-template.sh before calling a script change done; keep all
+flavours and supported Drupal versions working; only {{UPPER_SNAKE}} names
+are template tokens and GitHub Actions ${{ }} expressions must never be
+touched.
 
 ## Status (2026-07-29)
 
@@ -25,8 +25,9 @@ expressions must never be touched.
 - Stage 4, twig-cs-fixer plus vanilla flavour live run: DONE (ef05436;
   vanilla + Drupal 11 verified end to end, three setup bugs found and fixed).
 - Stage 5, Drupal CMS flavour: OPEN (prompt below).
-- Stage 6, template regression suite: OPEN (prompt below). Recommended order:
-  6 before 5, so the CMS flavour lands with regression cover.
+- Stage 6, template regression suite: DONE. scripts/test-template.sh, wired
+  into CI as the "template" job (runs when the guard job's composer.json
+  check is false).
 - Stage 7, optional module (site-only mode): OPEN (prompt below).
 - Stage 8, drupal.org pipeline parity: OPEN (prompt below).
 - Vanilla + Drupal 10 live run: DONE (2026-07-29; site installs and boots on

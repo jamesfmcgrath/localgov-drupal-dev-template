@@ -83,7 +83,7 @@ sub DRUPAL_TYPE      "$DRUPAL_TYPE"
 sub INSTALL_PROFILE  "$INSTALL_PROFILE"
 sub COMPOSER_PROJECT "$COMPOSER_PROJECT"
 
-rm -f TEMPLATE.md
+rm -f TEMPLATE.md scripts/test-template.sh
 chmod +x scripts/setup.sh scripts/install-drupal 2>/dev/null || true
 ok "Tokens applied ($FLAVOUR, Drupal $VERSION)."
 info "Removing initialiser (scripts/init.sh)..."

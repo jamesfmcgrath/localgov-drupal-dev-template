@@ -22,9 +22,16 @@ it alongside this file when planning work.
 
 - scripts/init.sh: one-time tokeniser. Prompts for module name/path, DDEV site,
   client, skill fork, and Drupal flavour (localgov|vanilla) + version (11|10).
-  Substitutes {{TOKENS}} across files, then removes itself and TEMPLATE.md. Must
-  preserve file executable bits (it writes back into files rather than mv-ing a
-  temp over them, and re-chmods the scripts).
+  Substitutes {{TOKENS}} across files, then removes itself, TEMPLATE.md, and
+  scripts/test-template.sh. Must preserve file executable bits (it writes back
+  into files rather than mv-ing a temp over them, and re-chmods the scripts).
+- scripts/test-template.sh: regression suite for the bare template. Copies the
+  repo to a throwaway dir per supported flavour/version combo, pipes scripted
+  answers into init.sh, and asserts the tokeniser and file invariants (no
+  leftover {{TOKENS}}, GitHub Actions ${{ }} expressions untouched, substituted
+  values present, scripts still parse and stay executable, JSON/YAML still
+  parse). No network, composer, or DDEV; the live spin-up still needs manual
+  verification. Removes itself on init, same as TEMPLATE.md.
 - scripts/setup.sh: one-command spin-up. Installs agr skills + drupal-reviewer,
   starts DDEV, scaffolds the Drupal project (composer create into a container
   temp dir then cp -n so template files are not clobbered), composer install,
@@ -48,8 +55,10 @@ it alongside this file when planning work.
   with drush si and sqlite, serves it with drush rs (falling back to php -S if
   that misbehaves), creates a node via drush, then runs pa11y-ci (WCAG2AA)
   against the URLs in .pa11yci (front page, /search, one node page). A guard
-  job skips everything when composer.json is absent, so the bare template repo
-  does not show a red CI run.
+  job checks whether composer.json is present: created projects skip straight
+  to the jobs above; the bare template runs a "template" job instead
+  (scripts/test-template.sh), so the template repo gets a real, green CI run
+  instead of one that skips everything.
 - Agent resources: agr.toml installs drupal-expert, ddev-expert, and
   drupal-localgov (from jamesfmcgrath/drupal-agent-resources). Standards live in
   AGENTS.md, the single source of truth; CLAUDE.md is only the @AGENTS.md import
@@ -77,11 +86,7 @@ Actions ${{ ... }} expressions must be left untouched.
 
 ### Working rules for any change
 
-- Before claiming a change to init.sh/setup.sh is done, smoke-test it: copy the
-  template to a throwaway dir, run init.sh with sample answers, then check no
-  {{UPPER_SNAKE}} tokens remain, GitHub Actions ${{ }} expressions survive,
-  bash -n passes on scripts, YAML/JSON/XML parse, `make -n` parses, and the
-  scripts are still executable.
+- Run scripts/test-template.sh before calling a template change done.
 - The DDEV/composer/npm spin-up cannot be fully proven without Docker; if you
   cannot run it, say so and mark it "needs live verification" rather than
   claiming success.
@@ -109,7 +114,14 @@ as expected). Known caveat: `make stan` (ddev exec vendor/bin/phpstan analyse
 process-exit interaction, not a Drupal 10 or vanilla-flavour defect; running
 the identical command through a shell (ddev exec bash -c "...") returns the
 correct exit 0. Needs a proper fix or workaround in the Makefile if it
-recurs.
+recurs. Stage 6, template regression suite: DONE. scripts/test-template.sh
+runs init.sh against all four flavour/version combos in throwaway copies and
+asserts the tokeniser and file invariants; wired into CI as the "template"
+job (runs when the guard job's composer.json check is false, the inverse of
+the jobs above), so the bare template repo now gets a real, green CI run
+instead of one that skips everything. The manual smoke-test convention in
+Working Rules has been replaced by this suite; the DDEV/composer spin-up
+still needs live verification, as before.
 
 ## Start prompt
 
@@ -126,6 +138,5 @@ anything yet.
    Chrome, add a config-managed option). Flag anything currently untested.
 
 Follow the project conventions: no em dashes, keep both flavours and both Drupal
-versions working, and smoke-test any script change (throwaway copy, run
-init.sh, check no tokens remain, scripts stay executable, YAML/JSON valid)
-before calling it done.
+versions working, and run scripts/test-template.sh before calling any template
+change done.
