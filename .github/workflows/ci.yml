@@ -276,8 +276,11 @@ jobs:
 
       - run: npm install --no-audit --no-fund
 
-      - name: pa11y-ci (WCAG2AA)
-        run: npx pa11y-ci
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Accessibility scan (axe-core via Playwright)
+        run: node scripts/a11y-scan.mjs
 
       - name: Show server logs
         if: failure()
