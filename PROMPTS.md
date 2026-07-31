@@ -44,6 +44,13 @@ touched.
   phpstan errors, a ddev-exec/PHPStan process-exit interaction, not specific
   to Drupal 10 or vanilla; confirmed the identical command exits 0 when run
   through a shell wrapper. Not yet root-caused or fixed in the Makefile).
+- Stage 9, replace pa11y-ci with axe-core + Playwright: DONE. pa11y-ci's
+  dependency chain (globby/glob/minimatch/brace-expansion) had 5 unfixable
+  high-severity npm audit findings and only covered WCAG 2.1 AA; the a11y CI
+  job now runs scripts/a11y-scan.mjs (@axe-core/playwright), enforcing WCAG
+  2.2 AA to match AGENTS.md. .pa11yci replaced by a11y-urls.json (same 3
+  paths). Needs live verification: only checked for YAML syntax and a local
+  dry run, not run against GitHub Actions infrastructure.
 
 ---
 

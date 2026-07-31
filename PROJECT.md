@@ -58,8 +58,9 @@ it alongside this file when planning work.
   skip cleanly when the module has no .twig files), phpunit (unit+kernel,
   sqlite), a prettier check, and an a11y job. The a11y job installs the site
   with drush si and sqlite, serves it with drush rs (falling back to php -S if
-  that misbehaves), creates a node via drush, then runs pa11y-ci (WCAG2AA)
-  against the URLs in .pa11yci (front page, /search, one node page). A guard
+  that misbehaves), creates a node via drush, then runs scripts/a11y-scan.mjs
+  (axe-core via Playwright, WCAG 2.2 AA) against the URLs in a11y-urls.json
+  (front page, /search, one node page). A guard
   job checks whether composer.json is present: created projects skip straight
   to the jobs above; the bare template runs a "template" job instead
   (scripts/test-template.sh), so the template repo gets a real, green CI run
