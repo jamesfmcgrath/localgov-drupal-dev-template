@@ -24,3 +24,4 @@
 /node_modules/
 .phpunit.cache/
 /web/sites/simpletest/
+.superpowers/
