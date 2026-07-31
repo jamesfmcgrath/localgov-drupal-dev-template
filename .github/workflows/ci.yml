@@ -186,7 +186,7 @@ jobs:
   # to "minimal" for this job only (minimal has no content types by default,
   # so the node-creation step below would need a bundle created first).
   a11y:
-    name: Accessibility (pa11y-ci)
+    name: Accessibility (axe-core)
     needs: guard
     if: needs.guard.outputs.run == 'true'
     runs-on: ubuntu-latest
