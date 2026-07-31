@@ -163,7 +163,13 @@ jobs:
         with:
           node-version: '20'
       - run: npm install --no-audit --no-fund
-      - run: npx prettier --check "{{MODULE_PATH}}/**/*.{css,js,json,yml,yaml,md}"
+      - name: Prettier
+        run: |
+          if find {{MODULE_PATH}} \( -name '*.css' -o -name '*.js' -o -name '*.json' -o -name '*.yml' -o -name '*.yaml' -o -name '*.md' \) -print -quit | grep -q .; then
+            npx prettier --check "{{MODULE_PATH}}/**/*.{css,js,json,yml,yaml,md}"
+          else
+            echo "No matching files found under {{MODULE_PATH}}; skipping prettier."
+          fi
 
       - name: CSpell
         run: |
