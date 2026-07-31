@@ -64,15 +64,9 @@ ci.yml (a11y job)
 - `./scripts/test-template.sh` must still pass (it validates `ci.yml` stays valid YAML and that token substitution is unaffected; it does not execute the `a11y` job itself, so it won't catch scan-logic bugs, only structural breakage).
 - No new automated test for `a11y-scan.mjs` itself: the existing regression suite is explicitly "no network, no DDEV" (per its own header comment), and this script's entire purpose requires a live server and a real browser. Its correctness is proven by the CI job actually running it — same "needs live verification" caveat already documented in `PROMPTS.md` for the original pa11y-ci job. Note the outcome the first time this job runs for real (pass/fail, and whether WCAG 2.2 AA surfaces any new violations beyond the old 2.1 AA scope).
 
-## Migration to `dev-drupal-11`
-
-`dev-drupal-11` is a scaffolded instance of this template (tokens already substituted, e.g. `{{MODULE_PATH}}` → `web/modules/custom`). Per the user's decision, this migration lands on both repos in this session:
-
-1. This repo (`localgov-drupal-dev-template`): new branch, implement as above.
-2. `jamesfmcgrath/dev-drupal-11`: clone locally, apply the equivalent change (same script, same `a11y-urls.json` shape, `ci.yml` job edited the same way, `package.json` deps swapped), commit, and push directly — following the same pattern as the two prior fixes ported to that repo (Prettier guard, Node 24 action bumps).
-
 ## Out of scope
 
+- `dev-drupal-11`: a disposable test install of this template. Not migrated; it will be deleted and re-scaffolded from the template once this change lands, rather than patched in place.
 - Changing `/a11y-check`'s own workflow (it already uses axe-core; not touched).
 - Running the a11y scan locally via DDEV/Makefile (no such integration exists today; not being added).
 - Any other CI job (`php`, `frontend_check`, `prettier`, `guard`) — untouched.
