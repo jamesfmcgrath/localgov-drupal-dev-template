@@ -44,13 +44,20 @@ async function main() {
 
   const browser = await chromium.launch();
   let totalViolations = 0;
+  let loadFailures = 0;
 
   try {
     const context = await browser.newContext();
     const page = await context.newPage();
     for (const urlPath of paths) {
       const url = new URL(urlPath, baseUrl).toString();
-      await page.goto(url, { waitUntil: 'load' });
+      const response = await page.goto(url, { waitUntil: 'load' });
+      if (!response || response.status() >= 400) {
+        const status = response ? response.status() : 'no response';
+        console.error(`[LOAD FAILURE] ${url} - HTTP status ${status}`);
+        loadFailures += 1;
+        continue;
+      }
       const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
       reportViolations(url, results.violations);
       totalViolations += results.violations.length;
@@ -59,10 +66,15 @@ async function main() {
     await browser.close();
   }
 
+  if (loadFailures > 0) {
+    console.error(`\n${loadFailures} page(s) failed to load across ${paths.length} page(s).`);
+    process.exitCode = 1;
+  }
+
   if (totalViolations > 0) {
     console.error(`\n${totalViolations} accessibility violation(s) found across ${paths.length} page(s).`);
     process.exitCode = 1;
-  } else {
+  } else if (loadFailures === 0) {
     console.log(`\nNo accessibility violations found across ${paths.length} page(s) (${WCAG_TAGS.join(', ')}).`);
   }
 }

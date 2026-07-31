@@ -56,7 +56,7 @@ ci.yml (a11y job)
 ## Error handling
 
 - If `a11y-urls.json` is missing or unparsable, the script exits non-zero with a clear message rather than silently scanning zero URLs (a silent no-op would be a worse failure mode than a loud one, since it would make the gate always pass).
-- If a page fails to load (`page.goto` throws, e.g. non-200 or timeout), that is treated as a scan failure for that URL (reported and counted toward the non-zero exit), not silently skipped — matching the existing job's `Show server logs` failure step, which already assumes the a11y step can fail meaningfully.
+- If a page fails to load, that is treated as a scan failure for that URL (reported and counted toward the non-zero exit), not silently skipped — matching the existing job's `Show server logs` failure step, which already assumes the a11y step can fail meaningfully. Two distinct cases are covered: `page.goto` throwing (network-level failures such as SSL errors, invalid URLs, timeouts, or an unreachable server), and an HTTP-level failure where `page.goto` resolves normally but the response status is missing or >= 400 (e.g. a 404) — Playwright does not throw on non-2xx/3xx responses, so the script checks the response status explicitly.
 - Playwright's own browser-install step failing (network, missing system deps) fails the job outright via normal CI step failure; no special handling needed beyond what `--with-deps` already provides on `ubuntu-latest`.
 
 ## Testing

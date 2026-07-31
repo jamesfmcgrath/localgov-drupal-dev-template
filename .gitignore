@@ -22,6 +22,7 @@
 
 # Node / Prettier / PHPUnit artifacts
 /node_modules/
+/package-lock.json
 .phpunit.cache/
 /web/sites/simpletest/
 .superpowers/
