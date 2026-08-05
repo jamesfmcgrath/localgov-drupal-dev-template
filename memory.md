@@ -51,8 +51,9 @@ staged improvement prompts and their status live in PROMPTS.md.
   phpstan/extension-installer (Drupal CMS blocks it via a stricter
   allow-plugins allowlist). Also fixed: Makefile lint/stan/test/twig-lint now
   skip when web/modules/custom has no files (site-only projects), instead of
-  hard-erroring. Still pending: dev-tooling require re-run to confirm, a clean
-  make check on the cms site, and the a11y URL set (/search in particular).
+  hard-erroring. Site-only cms install boots and make check runs clean (targets
+  skip). Still pending: dev-tooling require completing on a cms project, make
+  check against a real module (module mode), and the a11y /search URL.
 - a11y CI job on real GitHub Actions infrastructure (only YAML-checked so far).
 - Site-only mode full DDEV/composer spin-up.
 - make lint-js / lint-css and the GitHub Actions eslint/stylelint steps

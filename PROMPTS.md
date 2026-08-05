@@ -31,8 +31,11 @@ touched.
   Verified against Drupal CMS 2.1.3 (core 11, PHP 8.3). Live run 2026-08-05:
   composer create-project and the recipe install succeed; setup.sh's dev-tooling
   require needed an allow-plugins fix (phpstan/extension-installer, now
-  pre-authorised in setup.sh). Re-run of the require, make check, and the a11y
-  URL set still pending. Prompt below.
+  pre-authorised in setup.sh), and the Makefile quality targets needed a
+  site-only guard. The site-only cms install boots and make check runs clean
+  (targets skip). Still pending: the dev-tooling require completing on a cms
+  project, make check against a real module (module mode), and the a11y /search
+  URL. Prompt below.
 - Stage 6, template regression suite: DONE. scripts/test-template.sh, wired
   into CI as the "template" job (runs when the guard job's composer.json
   check is false).

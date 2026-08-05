@@ -199,9 +199,13 @@ the lint, stan, test, and twig-lint targets (and the fix variants) did not
 guard a missing web/modules/custom, which a site-only project does not have
 until a module is added, so they hard-errored (phpcs exit 3). Those targets now
 skip cleanly when the module directory has no files, matching the
-spell/lint-js/lint-css targets and the ci.yml guards. Still pending: a re-run
-of the dev-tooling require to confirm that fix, a clean make check on the
-installed cms site, and the a11y URL set (the /search path in particular).
+spell/lint-js/lint-css targets and the ci.yml guards. With that fix, make check
+runs clean on the site-only cms install: every quality target skips gracefully,
+since a site-only project has no custom module to lint. Still pending for full
+verification: the dev-tooling composer require completing on a cms project (it
+was interrupted by the allow-plugins block, now fixed but not yet re-run to
+success), make check exercising phpcs/phpstan against a real module in module
+mode, and whether the a11y job's /search URL resolves on a Drupal CMS site.
 
 Remaining open work: a handful of DDEV/composer/npm spin-ups remain marked
 "needs live verification": the cms flavour full spin-up, the a11y CI job on
