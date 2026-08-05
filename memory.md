@@ -61,7 +61,7 @@ staged improvement prompts and their status live in PROMPTS.md.
 
 - No em dashes anywhere.
 - Scripts stay executable, committed 100755.
-- Only {{UPPER_SNAKE}} names are tokens; GitHub Actions ${{ }} expressions
-  must never be touched.
+- Only UPPER_SNAKE names wrapped in double curly braces are tokens; GitHub
+  Actions ${{ }} expressions must never be touched.
 - Run scripts/test-template.sh before calling any template change done.
 - Keep all flavours, both Drupal versions, and both usage modes working.
