@@ -58,22 +58,46 @@ cr: ## Clear Drupal caches
 ## == Quality ==================================================================
 
 test: ## Run the module PHPUnit tests
-	ddev exec vendor/bin/phpunit -c web/core $(MODULE)
+	@if find $(MODULE) -type f -print -quit 2>/dev/null | grep -q .; then \
+	  ddev exec vendor/bin/phpunit -c web/core $(MODULE); \
+	else \
+	  echo "No files under $(MODULE); skipping phpunit (site-only project?)."; \
+	fi
 
 lint: ## Run PHPCS against the module
-	ddev exec vendor/bin/phpcs $(MODULE)
+	@if find $(MODULE) -type f -print -quit 2>/dev/null | grep -q .; then \
+	  ddev exec vendor/bin/phpcs $(MODULE); \
+	else \
+	  echo "No files under $(MODULE); skipping phpcs (site-only project?)."; \
+	fi
 
 lint-fix: ## Auto-fix PHPCS violations with PHPCBF
-	ddev exec vendor/bin/phpcbf $(MODULE)
+	@if find $(MODULE) -type f -print -quit 2>/dev/null | grep -q .; then \
+	  ddev exec vendor/bin/phpcbf $(MODULE); \
+	else \
+	  echo "No files under $(MODULE); skipping phpcbf (site-only project?)."; \
+	fi
 
 stan: ## Run PHPStan static analysis
-	ddev exec vendor/bin/phpstan analyse $(MODULE)
+	@if find $(MODULE) -type f -print -quit 2>/dev/null | grep -q .; then \
+	  ddev exec vendor/bin/phpstan analyse $(MODULE); \
+	else \
+	  echo "No files under $(MODULE); skipping phpstan (site-only project?)."; \
+	fi
 
 twig-lint: ## Lint Twig templates
-	ddev exec vendor/bin/twig-cs-fixer lint $(MODULE)
+	@if find $(MODULE) -name '*.twig' -print -quit 2>/dev/null | grep -q .; then \
+	  ddev exec vendor/bin/twig-cs-fixer lint $(MODULE); \
+	else \
+	  echo "No .twig files under $(MODULE); skipping twig-cs-fixer."; \
+	fi
 
 twig-fix: ## Auto-fix Twig template violations
-	ddev exec vendor/bin/twig-cs-fixer lint $(MODULE) --fix
+	@if find $(MODULE) -name '*.twig' -print -quit 2>/dev/null | grep -q .; then \
+	  ddev exec vendor/bin/twig-cs-fixer lint $(MODULE) --fix; \
+	else \
+	  echo "No .twig files under $(MODULE); skipping twig-cs-fixer."; \
+	fi
 
 spell: ## Spell-check the module with cspell
 	@if find $(MODULE) -type f -print -quit | grep -q .; then \

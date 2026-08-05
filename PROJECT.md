@@ -194,9 +194,14 @@ allowlist than the localgov and vanilla templates, so setup.sh's dev-tooling
 require aborted on phpstan/extension-installer (pulled in by
 mglaman/phpstan-drupal); setup.sh now pre-authorises that plugin and the
 phpcodesniffer installer before the require, and only prints success when the
-require actually succeeds. Still pending: a re-run of the dev-tooling require to
-confirm the fix, make check on the installed cms site, and the a11y URL set
-(the /search path in particular).
+require actually succeeds. Running make check on the site-only cms install also surfaced a Makefile gap:
+the lint, stan, test, and twig-lint targets (and the fix variants) did not
+guard a missing web/modules/custom, which a site-only project does not have
+until a module is added, so they hard-errored (phpcs exit 3). Those targets now
+skip cleanly when the module directory has no files, matching the
+spell/lint-js/lint-css targets and the ci.yml guards. Still pending: a re-run
+of the dev-tooling require to confirm that fix, a clean make check on the
+installed cms site, and the a11y URL set (the /search path in particular).
 
 Remaining open work: a handful of DDEV/composer/npm spin-ups remain marked
 "needs live verification": the cms flavour full spin-up, the a11y CI job on

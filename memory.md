@@ -49,7 +49,9 @@ staged improvement prompts and their status live in PROMPTS.md.
 - cms flavour live run (2026-08-05): composer create-project and the recipe
   install both work. Fixed: setup.sh now pre-authorises
   phpstan/extension-installer (Drupal CMS blocks it via a stricter
-  allow-plugins allowlist). Still pending: dev-tooling require re-run to confirm,
+  allow-plugins allowlist). Also fixed: Makefile lint/stan/test/twig-lint now
+  skip when web/modules/custom has no files (site-only projects), instead of
+  hard-erroring. Still pending: dev-tooling require re-run to confirm, a clean
   make check on the cms site, and the a11y URL set (/search in particular).
 - a11y CI job on real GitHub Actions infrastructure (only YAML-checked so far).
 - Site-only mode full DDEV/composer spin-up.
