@@ -92,13 +92,21 @@ success "Dependencies installed."
 
 # --- Dev tooling (lint / static analysis / tests) ---
 info "Adding PHP dev tooling..."
-ddev composer require --dev --no-interaction -W \
+# Pre-authorise the Composer plugins the dev tooling pulls in, so the require
+# below is not aborted by a project's allow-plugins allowlist. Drupal CMS ships
+# a stricter allowlist than the localgov and vanilla project templates, so
+# phpstan/extension-installer (via mglaman/phpstan-drupal) and the phpcodesniffer
+# installer (via drupal/coder) must be allowed first.
+ddev composer config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true 2>/dev/null || true
+ddev composer config --no-plugins allow-plugins.phpstan/extension-installer true 2>/dev/null || true
+if ddev composer require --dev --no-interaction -W \
   drupal/core-dev drupal/coder mglaman/phpstan-drupal \
   phpstan/phpstan phpstan/phpstan-deprecation-rules \
-  vincentlanglet/twig-cs-fixer drush/drush \
-  || warn "Some dev dependencies failed to install; add them manually."
-ddev composer config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true 2>/dev/null || true
-success "PHP dev tooling installed."
+  vincentlanglet/twig-cs-fixer drush/drush; then
+  success "PHP dev tooling installed."
+else
+  warn "Some dev dependencies failed to install; add them manually."
+fi
 
 # --- Prettier ---
 if [ -f "package.json" ]; then

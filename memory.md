@@ -46,9 +46,11 @@ staged improvement prompts and their status live in PROMPTS.md.
 
 ## Open items / needs live verification
 
-- cms flavour full spin-up: composer create-project drupal/cms, the recipe
-  install (drush si recipes/drupal_cms_starter), and the a11y URL set (/search
-  in particular) still need a live run with Docker.
+- cms flavour live run (2026-08-05): composer create-project and the recipe
+  install both work. Fixed: setup.sh now pre-authorises
+  phpstan/extension-installer (Drupal CMS blocks it via a stricter
+  allow-plugins allowlist). Still pending: dev-tooling require re-run to confirm,
+  make check on the cms site, and the a11y URL set (/search in particular).
 - a11y CI job on real GitHub Actions infrastructure (only YAML-checked so far).
 - Site-only mode full DDEV/composer spin-up.
 - make lint-js / lint-css and the GitHub Actions eslint/stylelint steps

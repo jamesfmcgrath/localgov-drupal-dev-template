@@ -28,8 +28,11 @@ touched.
   flavour added: drupal/cms, Drupal 11 only, INSTALL_PROFILE
   recipes/drupal_cms_starter; init.sh forces Drupal 11, install-drupal gained a
   recipe case, test-template.sh covers cms 11 and cms site-only (134/134 pass).
-  Verified against Drupal CMS 2.1.3 (core 11, PHP 8.3). The composer/DDEV/recipe
-  spin-up and the a11y URL set still need a live run. Prompt below.
+  Verified against Drupal CMS 2.1.3 (core 11, PHP 8.3). Live run 2026-08-05:
+  composer create-project and the recipe install succeed; setup.sh's dev-tooling
+  require needed an allow-plugins fix (phpstan/extension-installer, now
+  pre-authorised in setup.sh). Re-run of the require, make check, and the a11y
+  URL set still pending. Prompt below.
 - Stage 6, template regression suite: DONE. scripts/test-template.sh, wired
   into CI as the "template" job (runs when the guard job's composer.json
   check is false).

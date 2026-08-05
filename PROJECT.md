@@ -186,9 +186,17 @@ recipes/drupal_cms_starter, Drupal 11 forced); install-drupal gained a
 scripts/test-template.sh covers cms 11 and cms site-only, and now excludes the
 gitignored node_modules and package-lock.json from its throwaway copy. The
 regression suite passes 134/134. Verified against Drupal CMS 2.1.3, which
-requires Drupal core 11 and PHP 8.3 (the DDEV config already pins php 8.3). The
-composer create-project, the recipe install, and the a11y URL set (the /search
-path in particular) still need a live run, same caveat as the rest of setup.sh.
+requires Drupal core 11 and PHP 8.3 (the DDEV config already pins php 8.3).
+Live run in progress (2026-08-05): composer create-project and the recipe
+install (drush si recipes/drupal_cms_starter) both succeed on Drupal CMS 2.1.x.
+One bug found and fixed: Drupal CMS ships a stricter Composer allow-plugins
+allowlist than the localgov and vanilla templates, so setup.sh's dev-tooling
+require aborted on phpstan/extension-installer (pulled in by
+mglaman/phpstan-drupal); setup.sh now pre-authorises that plugin and the
+phpcodesniffer installer before the require, and only prints success when the
+require actually succeeds. Still pending: a re-run of the dev-tooling require to
+confirm the fix, make check on the installed cms site, and the a11y URL set
+(the /search path in particular).
 
 Remaining open work: a handful of DDEV/composer/npm spin-ups remain marked
 "needs live verification": the cms flavour full spin-up, the a11y CI job on
