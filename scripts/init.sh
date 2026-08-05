@@ -47,7 +47,7 @@ CLIENT="$(ask 'Client / context' 'a local council')"
 SKILL_FORK="$(ask 'drupal-agent-resources fork owner (hosts drupal-localgov)' 'jamesfmcgrath')"
 
 echo ""
-FLAVOUR="$(ask 'Drupal flavour: localgov or vanilla' 'localgov')"
+FLAVOUR="$(ask 'Drupal flavour: localgov, vanilla or cms' 'localgov')"
 VERSION="$(ask 'Drupal major version: 11 or 10' '11')"
 
 case "$VERSION" in 10) DRUPAL_TYPE="drupal10";; *) DRUPAL_TYPE="drupal11"; VERSION="11";; esac
@@ -55,6 +55,15 @@ case "$FLAVOUR" in
   vanilla|drupal)
     INSTALL_PROFILE="standard"
     COMPOSER_PROJECT="drupal/recommended-project:^${VERSION}"
+    ;;
+  cms)
+    # Drupal CMS is Drupal 11 only; force version regardless of the answer.
+    if [ "$VERSION" = "10" ]; then
+      warn "Drupal CMS is Drupal 11 only; using Drupal 11."
+    fi
+    VERSION="11"; DRUPAL_TYPE="drupal11"
+    INSTALL_PROFILE="recipes/drupal_cms_starter"
+    COMPOSER_PROJECT="drupal/cms"
     ;;
   *)
     INSTALL_PROFILE="localgov"
