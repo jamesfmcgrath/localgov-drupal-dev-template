@@ -44,6 +44,10 @@ skill versions are pinned and reproducible for the rest of the team.
 
 For a vanilla Drupal project, keep everything the same; the `drupal-localgov` skill detects LocalGov vs vanilla from `composer.json` and only applies council-specific guidance when relevant. If you never touch LocalGov, you can drop the drupal-localgov line from `agr.toml` and `scripts/setup.sh`.
 
+## Drupal CMS flavour
+
+Choosing `cms` at the flavour prompt scaffolds Drupal CMS (`drupal/cms`) instead of LocalGov or vanilla. Drupal CMS is Drupal 11 only, so `init.sh` forces the Drupal 11 DDEV type regardless of the version answer. For this flavour the install profile is a recipe path (`recipes/drupal_cms_starter`), not a profile machine name; `scripts/install-drupal` installs it with `drush si recipes/drupal_cms_starter`. LocalGov and Drupal CMS are separate assemblies: the `cms` flavour does not pull the localgov profile or modules, and the `drupal-localgov` skill stays dormant on a `cms` project (it detects LocalGov from `composer.json`).
+
 ## Site-only mode
 
 Leave the module machine name prompt blank in `init.sh` to skip module mode entirely: no module label, path, or repo prompt, `MODULE_PATH` becomes `web/modules/custom` (so quality tooling still scopes to whatever custom modules get added later), and `MODULE_NAME`/`MODULE_REPO` stay empty. Five composed tokens, `MODULE_INTRO`, `MODULE_LINE`, `MODULE_AFFECTS`, `PACKAGE_NAME`, and `PACKAGE_DESCRIPTION`, are not prompted directly; `init.sh` derives them from `MODULE_NAME` and the other answers so AGENTS.md, `.claude/commands/a11y-check.md`, and `package.json` read naturally in both modes. To add a module later, create it under `web/modules/custom/` and set `MODULE` and `MODULE_NAME` in the `Makefile`.

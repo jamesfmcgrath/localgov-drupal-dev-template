@@ -21,7 +21,8 @@ it alongside this file when planning work.
 ### What the template contains
 
 - scripts/init.sh: one-time tokeniser. Prompts for module name/path, DDEV site,
-  client, skill fork, and Drupal flavour (localgov|vanilla) + version (11|10).
+  client, skill fork, and Drupal flavour (localgov|vanilla|cms) + version
+  (11|10; the cms flavour forces Drupal 11).
   A blank module name selects site-only mode (Stage 7): the label/path/repo
   prompts are skipped, MODULE_PATH becomes web/modules/custom, and five
   composed tokens (MODULE_INTRO, MODULE_LINE, MODULE_AFFECTS, PACKAGE_NAME,
@@ -46,9 +47,11 @@ it alongside this file when planning work.
   by default), clones the module if a repo URL was given, runs install-drupal,
   enables the module. Flags: --skip-install, --force-reviewer.
 - scripts/install-drupal: profile picker (Standard/Umami/LocalGov/+Demo/
-  Microsites/+Elections); accepts a profile arg (case-insensitive for
-  "standard", matching init.sh's lowercase INSTALL_PROFILE) or runs
-  interactively.
+  Microsites/+Elections/Drupal CMS starter); accepts a profile arg
+  (case-insensitive for "standard", matching init.sh's lowercase
+  INSTALL_PROFILE) or runs interactively. For the cms flavour the arg is a
+  recipe path (recipes/drupal_cms_starter), which maps to
+  drush si recipes/drupal_cms_starter.
 - Tooling: .ddev/config.yaml (with test env), phpcs.xml.dist (Drupal +
   DrupalPractice), phpstan.neon (phpstan-drupal), PHPUnit via `-c web/core` plus
   DDEV web_environment, vincentlanglet/twig-cs-fixer for Twig linting (Prettier
@@ -108,8 +111,8 @@ Actions ${{ ... }} expressions must be left untouched.
   stub), agr.toml, agr.lock, .claude/agents/, .claude/commands/,
   .claude/settings.local.json.dist.
 - Scripts must stay executable and be committed as 100755.
-- Keep both flavour branches (localgov, vanilla) and both versions (10, 11)
-  working.
+- Keep all three flavour branches (localgov, vanilla, cms) working, and both
+  versions (10, 11) for localgov and vanilla; cms is Drupal 11 only.
 - Keep both usage modes working: site-only (blank module name) and module
   mode (a module name given). Module mode's behaviour must never change as a
   side effect of site-only work, or vice versa.
@@ -122,7 +125,7 @@ Actions ${{ ... }} expressions must be left untouched.
   claiming success.
 - State assumptions and proceed; ask only when the answer changes what you do.
 
-### Status (2026-07)
+### Status (2026-08-05)
 
 Verified end to end on clean pulls for LocalGov + Drupal 11 and LocalGov +
 Drupal 10. Vanilla + Drupal 11 also verified end to end (2026-07-28), which
@@ -136,26 +139,30 @@ added. Twig linting added via twig-cs-fixer (make twig-lint / twig-fix, wired
 into CI); functional/browser tests not in CI. The a11y (pa11y-ci) CI job
 needs live verification: it has only been checked for YAML syntax, not run
 against GitHub Actions infrastructure. Vanilla + Drupal 10 verified end to
-end (2026-07-29): both vanilla setup bugs above hold fixed on Drupal 10, the
-site installs and boots (Drupal 10.6.14, front page 200), and make check
-passes (phpcs, phpunit, twig-cs-fixer clean; empty module test suite skips
-as expected). Known caveat: `make stan` (ddev exec vendor/bin/phpstan analyse
-...) can report a spurious exit 1 with zero real errors, a ddev-exec/PHPStan
-process-exit interaction, not a Drupal 10 or vanilla-flavour defect; running
-the identical command through a shell (ddev exec bash -c "...") returns the
-correct exit 0. Needs a proper fix or workaround in the Makefile if it
-recurs. Stage 6, template regression suite: DONE. scripts/test-template.sh
-runs init.sh against all four flavour/version combos in throwaway copies and
+end (first run 2026-07-29, re-run 2026-08-05 with no issues): both vanilla
+setup bugs above hold fixed on Drupal 10, the site installs and boots (Drupal
+10.6.14, front page 200), and make check passes (phpcs, phpunit,
+twig-cs-fixer clean; empty module test suite skips as expected). Known
+caveat: `make stan` (ddev exec vendor/bin/phpstan analyse ...) can report a
+spurious exit 1 with zero real errors, a ddev-exec/PHPStan process-exit
+interaction, not a Drupal 10 or vanilla-flavour defect; running the identical
+command through a shell (ddev exec bash -c "...") returns the correct exit 0.
+Needs a proper fix or workaround in the Makefile if it recurs.
+
+Stage 6, template regression suite: DONE. scripts/test-template.sh runs
+init.sh against every supported flavour/version combo in throwaway copies and
 asserts the tokeniser and file invariants; wired into CI as the "template"
 job (runs when the guard job's composer.json check is false, the inverse of
 the jobs above), so the bare template repo now gets a real, green CI run
 instead of one that skips everything. The manual smoke-test convention in
 Working Rules has been replaced by this suite; the DDEV/composer spin-up
 still needs live verification, as before.
-Stage 7, optional module (site-only mode): tokeniser and file-invariant work
-DONE, covered by scripts/test-template.sh's site-only regression check; the
+
+Stage 7, optional module (site-only mode): DONE. Tokeniser and file-invariant
+work covered by scripts/test-template.sh's site-only regression check; the
 full site-only DDEV/composer spin-up still needs a live run, same caveat as
 the rest of setup.sh.
+
 Stage 8, drupal.org (GitLab CI) pipeline parity: DONE. assets/module.gitlab-ci.yml
 ships the canonical include block plus a variables block that turns Twig CS
 Fixer back on (it defaults to skipped upstream, a fact confirmed directly
@@ -167,10 +174,28 @@ web/core/node_modules), all wired into make check. GitHub Actions ci.yml
 mirrors the same three checks. Actually running make lint-js/lint-css, and
 the GitHub Actions eslint/stylelint steps end to end, needs a live DDEV
 project with web/core's own frontend dependencies installed (`cd web/core &&
-corepack enable && yarn install`, or the DDEV equivalent), which is outside this stage's scope and
-still needs live verification, same caveat as the rest of this template's
-DDEV-dependent tooling. Nightwatch (browser JS tests) has no local
-equivalent and stays CI-only.
+corepack enable && yarn install`, or the DDEV equivalent), which is outside
+this stage's scope and still needs live verification, same caveat as the rest
+of this template's DDEV-dependent tooling. Nightwatch (browser JS tests) has
+no local equivalent and stays CI-only.
+
+Stage 5, Drupal CMS ("cms") flavour: DONE at the tokeniser level (2026-08-05).
+init.sh gained a cms branch (COMPOSER_PROJECT drupal/cms, INSTALL_PROFILE
+recipes/drupal_cms_starter, Drupal 11 forced); install-drupal gained a
+"Drupal CMS starter (recipe)" case running drush si recipes/drupal_cms_starter;
+scripts/test-template.sh covers cms 11 and cms site-only, and now excludes the
+gitignored node_modules and package-lock.json from its throwaway copy. The
+regression suite passes 134/134. Verified against Drupal CMS 2.1.3, which
+requires Drupal core 11 and PHP 8.3 (the DDEV config already pins php 8.3). The
+composer create-project, the recipe install, and the a11y URL set (the /search
+path in particular) still need a live run, same caveat as the rest of setup.sh.
+
+Remaining open work: a handful of DDEV/composer/npm spin-ups remain marked
+"needs live verification": the cms flavour full spin-up, the a11y CI job on
+real GitHub Actions infrastructure, the site-only mode full spin-up, and make
+lint-js/lint-css plus the GitHub Actions eslint/stylelint steps against a live
+web/core frontend install. The `make stan` spurious-exit-1 caveat is not yet
+root-caused or fixed in the Makefile.
 
 ## Start prompt
 
@@ -182,9 +207,9 @@ anything yet.
 2. Confirm back to me: the current token list, the setup.sh spin-up steps in
    order, and which flavour/version combinations are wired up.
 3. Give me a short prioritised backlog of improvements you would suggest (for
-   example: verify the vanilla flavour on a live run, pin the drupal-reviewer
-   and skill versions, add Twig support to Prettier, add functional-test CI with
-   Chrome, add a config-managed option). Flag anything currently untested.
+   example: add the Drupal CMS flavour, pin the drupal-reviewer and skill
+   versions, run the remaining live verifications). Flag anything currently
+   untested.
 
 Follow the project conventions: no em dashes, keep both flavours and both Drupal
 versions working, and run scripts/test-template.sh before calling any template

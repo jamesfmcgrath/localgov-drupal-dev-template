@@ -11,7 +11,7 @@ flavours and supported Drupal versions working; only {{UPPER_SNAKE}} names
 are template tokens and GitHub Actions ${{ }} expressions must never be
 touched.
 
-## Status (2026-07-29)
+## Status (2026-08-05)
 
 - Stage 1, reviewer gates upstreamed to the skill fork: DONE
   (jamesfmcgrath/drupal-agent-resources commit 1dc398c; setup.sh fetches from
@@ -24,7 +24,12 @@ touched.
   present (the guard job skips it on the bare template).
 - Stage 4, twig-cs-fixer plus vanilla flavour live run: DONE (ef05436;
   vanilla + Drupal 11 verified end to end, three setup bugs found and fixed).
-- Stage 5, Drupal CMS flavour: OPEN (prompt below).
+- Stage 5, Drupal CMS flavour: DONE at the tokeniser level (2026-08-05). "cms"
+  flavour added: drupal/cms, Drupal 11 only, INSTALL_PROFILE
+  recipes/drupal_cms_starter; init.sh forces Drupal 11, install-drupal gained a
+  recipe case, test-template.sh covers cms 11 and cms site-only (134/134 pass).
+  Verified against Drupal CMS 2.1.3 (core 11, PHP 8.3). The composer/DDEV/recipe
+  spin-up and the a11y URL set still need a live run. Prompt below.
 - Stage 6, template regression suite: DONE. scripts/test-template.sh, wired
   into CI as the "template" job (runs when the guard job's composer.json
   check is false).
@@ -37,7 +42,8 @@ touched.
   see PROJECT.md for the SKIP_TWIG_CS_FIXER and hex-color caveats
   found during implementation. The DDEV/npm spin-up for lint-js/lint-css
   still needs a live run.
-- Vanilla + Drupal 10 live run: DONE (2026-07-29; site installs and boots on
+- Vanilla + Drupal 10 live run: DONE (2026-07-29, re-run 2026-08-05 with no
+  issues; site installs and boots on
   Drupal 10.6.14, both vanilla setup bugs from Stage 4 hold fixed, make check
   passes: phpcs/phpunit/twig-cs-fixer clean, empty module test suite skips as
   expected. Caveat: `make stan` can report a spurious exit 1 with zero real

@@ -7,7 +7,7 @@ A starting point for working locally on a Drupal 10/11 module or site, with Clau
 - Claude Code + Cursor agent resources installed reproducibly via [`agr`](https://github.com/kasperjunge/agent-resources): `drupal-expert`, `ddev-expert`, and `drupal-localgov` skills, plus the `drupal-reviewer` agent.
 - Shared coding, review, and accessibility standards in a single `AGENTS.md` (read natively by Cursor and most agents; Claude Code loads it via the `@AGENTS.md` import in the `CLAUDE.md` stub).
 - An accessibility audit workflow (`.claude/commands/a11y-check.md`): axe-core scan plus keyboard, reflow, and motion passes, aimed at WCAG 2.2 AA (the public sector legal floor is WCAG 2.1 AA / EN 301 549).
-- A DDEV config and a one-command `scripts/setup.sh` that starts DDEV, scaffolds a Drupal project (LocalGov or vanilla, chosen at init), installs the site, adds dev tooling, and enables your module if you configured one (site-only projects skip that step).
+- A DDEV config and a one-command `scripts/setup.sh` that starts DDEV, scaffolds a Drupal project (LocalGov, vanilla, or Drupal CMS, chosen at init), installs the site, adds dev tooling, and enables your module if you configured one (site-only projects skip that step).
 - PHP tooling wired to the Makefile: PHPCS (Drupal, DrupalPractice), PHPStan (phpstan-drupal), PHPUnit, Twig CS Fixer for Twig templates (Prettier does not lint Twig), plus Prettier for front-end assets.
 - A GitHub Actions CI workflow (`.github/workflows/ci.yml`) running PHPCS, PHPStan, Twig CS Fixer, PHPUnit (unit + kernel), the Prettier check, and an axe-core (via Playwright) accessibility job (WCAG 2.2 AA, against an installed sqlite site) on push and pull request.
 - drupal.org (git.drupalcode.org) pipeline parity: `assets/module.gitlab-ci.yml` is a ready `.gitlab-ci.yml` for the module, copied in with `make module-ci`. Local tooling mirrors the same pipeline's default validation jobs, cspell (`make spell`), ESLint and Stylelint (`make lint-js`, `make lint-css`) using Drupal core's own configs, alongside the existing PHPCS/PHPStan/Twig CS Fixer, so `make check` predicts what runs there. Twig CS Fixer is skipped by default upstream; the shipped pipeline turns it back on to match this template's local tooling. Nightwatch (browser JS tests) and Composer Lint have no local or GitHub Actions equivalent and stay CI-only. The cspell config and dictionary (`cspell.json`, `.cspell-project-words.txt`) live at this template's root, not in `make module-ci`'s copy; a module split into its own drupalcode repo needs its own copy of those two files for full parity on that job.
@@ -38,7 +38,7 @@ A starting point for working locally on a Drupal 10/11 module or site, with Clau
    ./scripts/init.sh
    ```
 
-   It asks for the module name (leave blank for a site-only project, which skips the module label/path/repo prompts) and path, DDEV site, client, skill fork, and the Drupal flavour (`localgov` or `vanilla`) and version (`11` or `10`). It tokenises every file, then removes itself.
+   It asks for the module name (leave blank for a site-only project, which skips the module label/path/repo prompts) and path, DDEV site, client, skill fork, and the Drupal flavour (`localgov`, `vanilla`, or `cms`) and version (`11` or `10`; Drupal CMS is Drupal 11 only). It tokenises every file, then removes itself.
 3. Spin the whole environment up with one command:
 
    ```bash
