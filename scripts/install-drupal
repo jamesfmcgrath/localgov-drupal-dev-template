@@ -8,7 +8,7 @@ if [[ "${TRACE:-0}" == "1" ]]; then
 fi
 
 echo "What profile do you want to install?"
-options=("Standard" "Umami" "LocalGov" "LocalGov (with Demo Content)" "LocalGov Microsites" "LocalGov (with Elections)")
+options=("Standard" "Umami" "LocalGov" "LocalGov (with Demo Content)" "LocalGov Microsites" "LocalGov (with Elections)" "Drupal CMS starter (recipe)")
 
 # Check if a command-line argument was provided
 if [ $# -gt 0 ]; then
@@ -42,6 +42,10 @@ case $profile_selection in
   "LocalGov (with Elections)" |"lgde" | 6)
     ddev drush si localgov -y
     ddev drush en localgov_elections_demo_content -y
+    ;;
+  "Drupal CMS starter (recipe)" | "cms" | "recipes/drupal_cms_starter" | 7)
+    # Drupal CMS installs headlessly from a recipe path, not a profile name.
+    ddev drush si recipes/drupal_cms_starter -y
     ;;
   *)
     echo "Invalid option. Please run the script again with a valid option."

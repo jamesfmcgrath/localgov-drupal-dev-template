@@ -18,20 +18,22 @@ fail() { TOTAL_FAIL=$((TOTAL_FAIL + 1)); echo -e "  ${RED}FAIL${RESET} $*"; }
 
 # One entry per supported flavour/version pair:
 #   flavour|version|expected DRUPAL_TYPE|expected COMPOSER_PROJECT|expected INSTALL_PROFILE
-# Add a line here when a new flavour lands (e.g. cms 11 for Stage 5); this is
-# the only place a new combo needs to register its expected derived values.
+# Add a line here when a new flavour lands; this is the only place a new combo
+# needs to register its expected derived values. cms is Drupal 11 only, and its
+# INSTALL_PROFILE is a recipe path rather than a profile machine name.
 COMBOS=(
   "localgov|11|drupal11|drupal/localgov_project|localgov"
   "localgov|10|drupal10|drupal/localgov_project:^3.0|localgov"
   "vanilla|11|drupal11|drupal/recommended-project:^11|standard"
   "vanilla|10|drupal10|drupal/recommended-project:^10|standard"
+  "cms|11|drupal11|drupal/cms|recipes/drupal_cms_starter"
 )
 
 MODULE_NAME="regress_mod"
 
 # Files that document the {{UPPER_SNAKE}} token convention as literal text
 # (companion maintainer docs), not files init.sh substitutes into.
-TOKEN_DOC_EXCEPTIONS=("PROJECT.md" "PROMPTS.md")
+TOKEN_DOC_EXCEPTIONS=("PROJECT.md" "PROMPTS.md" "memory.md")
 
 yaml_parse() {
   local f="$1"
@@ -54,7 +56,7 @@ run_combo() {
 
   local tmp_dir
   tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/test-template.XXXXXX")"
-  rsync -a --exclude='.git' --exclude='_to_delete' --exclude='.superpowers' --exclude='docs' --exclude='.claude/settings.local.json' "$REPO_ROOT"/ "$tmp_dir"/ >/dev/null
+  rsync -a --exclude='.git' --exclude='_to_delete' --exclude='.superpowers' --exclude='docs' --exclude='.claude/settings.local.json' --exclude='node_modules' --exclude='package-lock.json' "$REPO_ROOT"/ "$tmp_dir"/ >/dev/null
 
   local ci_before ci_after
   ci_before="$(grep -oF '${{' "$tmp_dir/.github/workflows/ci.yml" | wc -l | tr -d ' ')"
@@ -162,7 +164,7 @@ run_site_only() {
 
   local tmp_dir
   tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/test-template-site.XXXXXX")"
-  rsync -a --exclude='.git' --exclude='_to_delete' --exclude='.superpowers' --exclude='docs' --exclude='.claude/settings.local.json' "$REPO_ROOT"/ "$tmp_dir"/ >/dev/null
+  rsync -a --exclude='.git' --exclude='_to_delete' --exclude='.superpowers' --exclude='docs' --exclude='.claude/settings.local.json' --exclude='node_modules' --exclude='package-lock.json' "$REPO_ROOT"/ "$tmp_dir"/ >/dev/null
 
   local init_log="$tmp_dir/.init-output.log"
   if (cd "$tmp_dir" && printf '\n\n\n\n\n%s\n%s\n' "$flavour" "$version" | ./scripts/init.sh) >"$init_log" 2>&1; then
@@ -220,6 +222,7 @@ for combo in "${COMBOS[@]}"; do
 done
 
 run_site_only "localgov" "11"
+run_site_only "cms" "11"
 
 echo ""
 echo -e "${BOLD}== Summary ==${RESET}"
