@@ -24,7 +24,7 @@
 
 - `AGENTS.md`, project context (composed via `MODULE_INTRO`/`MODULE_LINE`/`THEME_INTRO`/`THEME_LINE` so it reads naturally in all four module/theme combinations), DDEV site, client (CLAUDE.md is only the @AGENTS.md import stub, no tokens)
 - `.claude/commands/a11y-check.md`, DDEV site URL, page-selection wording (`MODULE_AFFECTS`), theme fix-layer hint (`THEME_LAYER`)
-- `scripts/setup.sh`, `MODULE_REPO`, `MODULE_PATH`, `MODULE_NAME`, `DDEV_NAME`, `DDEV_URL`, `SKILL_FORK`, `COMPOSER_PROJECT`, `INSTALL_PROFILE`
+- `scripts/setup.sh`, `MODULE_REPO`, `MODULE_PATH`, `MODULE_NAME`, `DDEV_NAME`, `DDEV_URL`, `SKILL_FORK`, `COMPOSER_PROJECT`, `INSTALL_PROFILE`, `DRUPAL_TYPE`
 - `Makefile`, `MODULE_NAME`, `MODULE_PATH`, `THEME_NAME`, `THEME_LABEL`, `THEME_PATH`, `DRUPAL_FLAVOUR`, `DDEV_NAME`
 - `.claude/settings.local.json.dist`, module path in the allowlist
 - `agr.toml`, `SKILL_FORK` in the drupal-localgov handle

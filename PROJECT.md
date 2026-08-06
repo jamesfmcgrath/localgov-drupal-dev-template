@@ -86,6 +86,26 @@ it alongside this file when planning work.
   drush generate single-directory-component, pre-filling its first three
   answers (theme machine name, component name, component machine name) via
   --answer and leaving the component shape questions interactive.
+- Local dev recipes: assets/settings.local.php and assets/development.services.yml
+  (Twig debug on, Twig cache off, render/page/dynamic_page_cache bins
+  null-backed) are copied by setup.sh into web/sites/default/ and web/sites/
+  only when absent, and setup.sh activates the include in
+  web/sites/default/settings.php (uncomments Drupal's own commented block if
+  present, appends the standard guarded include if not; never touches DDEV's
+  own settings.ddev.php include). recipes/dev_tools (devel,
+  environment_indicator, environment_indicator_toolbar) and recipes/site_tools
+  (admin_toolbar, admin_toolbar_tools, twig_tweak, eca, eca_ui, bpmn_io) apply
+  via ddev drush recipe after the site install, site_tools then dev_tools,
+  followed by one more drush cex; config_exclude_modules in
+  settings.local.php keeps devel and environment_indicator_toolbar out of
+  that export (environment_indicator itself is not excluded, so it flows to
+  every environment through normal config sync). ECA and bpmn_io are
+  version-paired with Drupal core in setup.sh's composer require: ^3.1/^3.0
+  on Drupal 11 (ECA 3.x needs core 11.3+), ^2.1/^2.0 on Drupal 10.
+  drupal/core-recipe-unpack is required and pre-authorised
+  (allow-plugins.drupal/core-recipe-unpack) alongside them. make recipe
+  R=path applies any recipe; --no-site-tools and --no-dev-tools skip either
+  recipe independently in setup.sh.
 - CI: .github/workflows/ci.yml runs phpcs, phpstan, twig-cs-fixer (guarded to
   skip cleanly when the module has no .twig files), phpunit (unit+kernel,
   sqlite), a prettier check, and an a11y job. The a11y job installs the site
@@ -284,6 +304,9 @@ drush's --answer ordering for the SDC generator was confirmed live
 (theme machine name, component name, component machine name, then description,
 library dependencies, CSS, JS, props, slots), so the target now pre-fills the
 first three instead of printing them for the user to type.
+
+Stage 11, local dev recipes: IN PROGRESS, see Task 11 of
+docs/superpowers/plans/2026-08-06-local-dev-recipes.md for live verification.
 
 Still not run live: core's generate-theme starterkit call on the vanilla and
 cms branches (the localgov branch is now proven).

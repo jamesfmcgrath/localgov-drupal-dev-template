@@ -89,6 +89,8 @@ touched.
   is blocked by the pre-existing make stan ddev-exec exit-code caveat and by
   subtheme vocabulary missing from .cspell-project-words.txt. See PROJECT.md
   for the measurements.
+- Stage 11, local dev recipes: IN PROGRESS, see Task 11 of
+  docs/superpowers/plans/2026-08-06-local-dev-recipes.md for live verification.
 
 ---
 
