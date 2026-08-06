@@ -181,6 +181,34 @@ assert_common() { # assert_common <dir> <label>
     fail "$label: assets/module.gitlab-ci.yml changed or missing after init.sh"
   fi
 
+  # recipes/ and the local dev settings templates hold no {{TOKENS}} either,
+  # so they must survive init.sh verbatim too.
+  for f in recipes/dev_tools/recipe.yml recipes/site_tools/recipe.yml \
+    assets/settings.local.php assets/development.services.yml; do
+    if diff -q "$REPO_ROOT/$f" "$dir/$f" >/dev/null 2>&1; then
+      pass "$label: $f survives init.sh verbatim"
+    else
+      fail "$label: $f changed or missing after init.sh"
+    fi
+  done
+
+  if yaml_parse "$dir/recipes/dev_tools/recipe.yml"; then
+    pass "$label: recipes/dev_tools/recipe.yml is valid YAML"
+  else
+    fail "$label: recipes/dev_tools/recipe.yml is not valid YAML"
+  fi
+  if yaml_parse "$dir/recipes/site_tools/recipe.yml"; then
+    pass "$label: recipes/site_tools/recipe.yml is valid YAML"
+  else
+    fail "$label: recipes/site_tools/recipe.yml is not valid YAML"
+  fi
+
+  if (cd "$dir" && make -n recipe R=recipes/site_tools) >/dev/null 2>&1; then
+    pass "$label: make -n recipe parses"
+  else
+    fail "$label: make -n recipe failed"
+  fi
+
   # The custom code workspace is the scoping unit for the quality tooling.
   for f in phpcs.xml.dist phpstan.neon package.json .github/workflows/ci.yml; do
     if grep -q 'web/modules/custom' "$dir/$f" 2>/dev/null && grep -q 'web/themes/custom' "$dir/$f" 2>/dev/null; then
