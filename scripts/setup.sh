@@ -18,6 +18,7 @@ MODULE_NAME="{{MODULE_NAME}}"
 SKILL_FORK="{{SKILL_FORK}}"
 COMPOSER_PROJECT="{{COMPOSER_PROJECT}}"
 INSTALL_PROFILE="{{INSTALL_PROFILE}}"
+DRUPAL_TYPE="{{DRUPAL_TYPE}}"
 REVIEWER_REF="main"
 REVIEWER_URL="https://raw.githubusercontent.com/${SKILL_FORK}/drupal-agent-resources/${REVIEWER_REF}/.claude/agents/drupal-reviewer.md"
 
@@ -128,6 +129,37 @@ if ddev composer require --dev --no-interaction -W \
   success "PHP dev tooling installed."
 else
   warn "Some dev dependencies failed to install; add them manually."
+fi
+
+# --- Site utility modules (recipes plumbing) ---
+# drupal/core-recipe-unpack lets `drush recipe` and any composer-distributed
+# recipe unpack its dependencies into this project's own composer.json.
+# Required up front alongside the modules recipes/site_tools and
+# recipes/dev_tools install (applied later, after the site install).
+info "Adding site utility modules..."
+ddev composer config --no-plugins allow-plugins.drupal/core-recipe-unpack true 2>/dev/null || true
+# ECA and its BPMN modeller are version-paired with Drupal core: the 3.x line
+# needs Drupal 11.3+, so Drupal 10 projects use the 2.x line instead.
+if [ "$DRUPAL_TYPE" = "drupal10" ]; then
+  ECA_PACKAGES=(drupal/eca:^2.1 drupal/bpmn_io:^2.0)
+else
+  ECA_PACKAGES=(drupal/eca:^3.1 drupal/bpmn_io:^3.0)
+fi
+if ddev composer require --no-interaction -W \
+  drupal/core-recipe-unpack drupal/environment_indicator \
+  drupal/ctools:^4.1 drupal/admin_toolbar:^3.6 drupal/twig_tweak:^3.4 \
+  "${ECA_PACKAGES[@]}"; then
+  success "Site utility modules installed."
+else
+  warn "Some site utility modules failed to install; add them manually."
+fi
+
+# --- Dev-only modules (require-dev, absent from a --no-dev production build) ---
+info "Adding dev-only modules..."
+if ddev composer require --dev --no-interaction -W drupal/devel:^5.5; then
+  success "Dev-only modules installed."
+else
+  warn "drupal/devel failed to install; add it manually."
 fi
 
 # --- Prettier ---
