@@ -199,11 +199,11 @@ SETTINGS_PHP="web/sites/default/settings.php"
 if [ -f "$SETTINGS_PHP" ]; then
   ACTIVE_INCLUDE="if (file_exists(\$app_root . '/' . \$site_path . '/settings.local.php')) {"
   COMMENTED_INCLUDE="# if (file_exists(\$app_root . '/' . \$site_path . '/settings.local.php')) {"
-  if grep -qF "$ACTIVE_INCLUDE" "$SETTINGS_PHP" 2>/dev/null; then
+  if grep -qFx "$ACTIVE_INCLUDE" "$SETTINGS_PHP" 2>/dev/null; then
     success "settings.php already includes settings.local.php."
-  elif grep -qF "$COMMENTED_INCLUDE" "$SETTINGS_PHP" 2>/dev/null; then
+  elif grep -qFx "$COMMENTED_INCLUDE" "$SETTINGS_PHP" 2>/dev/null; then
     info "Enabling the settings.local.php include in settings.php..."
-    line_no="$(grep -nF "$COMMENTED_INCLUDE" "$SETTINGS_PHP" | head -1 | cut -d: -f1)"
+    line_no="$(grep -nFx "$COMMENTED_INCLUDE" "$SETTINGS_PHP" | head -1 | cut -d: -f1)"
     l2=$((line_no + 1)); l3=$((line_no + 2))
     tmp="$(mktemp)"
     awk -v a="$line_no" -v b="$l2" -v c="$l3" \
