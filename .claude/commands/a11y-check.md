@@ -50,10 +50,11 @@ For each page, verify by driving the browser or by inspecting the relevant Twig 
 
 ## Step 5: Report
 
-Group findings by WCAG success criterion with severity (critical / serious / moderate / minor), the axe rule id, affected selector, and the likely source (module template, theme, or content). Distinguish fixable-in-this-module issues from theme issues and from upstream (core / contrib / LocalGov) issues that should be reported upstream.
+Group findings by WCAG success criterion with severity (critical / serious / moderate / minor), the axe rule id, affected selector, and the likely source (module template, theme, or content). Distinguish issues fixable in this project's custom code from theme issues and from upstream (core / contrib / LocalGov) issues that should be reported upstream.
 
 ## Fix rules
 
-- Fix in the correct layer: markup in Twig, styling in CSS following the Front-end Standards in `AGENTS.md`.
+- Fix in the correct layer: markup in Twig, styling in CSS following the Front-end Standards in `AGENTS.md`.{{THEME_LAYER}}
+- Where the affected markup is a single directory component, fix it inside that component (its Twig, its CSS), not in a theme-wide override.
 - Prefer native HTML semantics over ARIA. ARIA is a last resort.
 - After fixes: `ddev drush cr`, re-run the scan on affected pages, and run the drupal-reviewer agent.

@@ -1,6 +1,7 @@
-# CI for the custom module developed in this repo.
-# Assumes the module lives at {{MODULE_PATH}} in this repository. If your module
-# is maintained in its own repo, put this workflow there instead.
+# CI for the custom code developed in this repo.
+# Scopes to the custom code workspace (LINT_PATHS below): web/modules/custom and
+# web/themes/custom. If a module or theme is maintained in its own repo, put a
+# copy of this workflow there instead.
 name: CI
 
 on:
@@ -45,6 +46,9 @@ jobs:
     needs: guard
     if: needs.guard.outputs.run == 'true'
     runs-on: ubuntu-latest
+    env:
+      # The custom code workspace. Keep in step with LINT_PATHS in the Makefile.
+      LINT_PATHS: web/modules/custom web/themes/custom
     steps:
       - uses: actions/checkout@v5
 
@@ -66,29 +70,41 @@ jobs:
       - name: Install dependencies
         run: composer install --no-interaction --no-progress
 
+      # The custom code paths are the unit the quality tools scope to. Creating
+      # them keeps every find guard, and a bare phpcs/phpstan run, working on a
+      # project that has only modules or only a theme so far.
+      - name: Ensure the custom code paths exist
+        run: mkdir -p $LINT_PATHS
+
       - name: PHPCS (Drupal, DrupalPractice)
         run: |
-          if find {{MODULE_PATH}} -type f -print -quit | grep -q .; then
-            vendor/bin/phpcs
-          else
-            echo "No files found under {{MODULE_PATH}}; skipping phpcs."
-          fi
+          for p in $LINT_PATHS; do
+            if find "$p" -type f -print -quit | grep -q .; then
+              vendor/bin/phpcs "$p"
+            else
+              echo "No files found under $p; skipping phpcs."
+            fi
+          done
 
       - name: PHPStan
         run: |
-          if find {{MODULE_PATH}} -type f -print -quit | grep -q .; then
-            vendor/bin/phpstan analyse --no-progress
-          else
-            echo "No files found under {{MODULE_PATH}}; skipping phpstan."
-          fi
+          for p in $LINT_PATHS; do
+            if find "$p" -type f -print -quit | grep -q .; then
+              vendor/bin/phpstan analyse --no-progress "$p"
+            else
+              echo "No files found under $p; skipping phpstan."
+            fi
+          done
 
       - name: Twig CS Fixer
         run: |
-          if find {{MODULE_PATH}} -name '*.twig' -print -quit | grep -q .; then
-            vendor/bin/twig-cs-fixer lint {{MODULE_PATH}}
-          else
-            echo "No .twig files found under {{MODULE_PATH}}; skipping."
-          fi
+          for p in $LINT_PATHS; do
+            if find "$p" -name '*.twig' -print -quit | grep -q .; then
+              vendor/bin/twig-cs-fixer lint "$p"
+            else
+              echo "No .twig files found under $p; skipping."
+            fi
+          done
 
       - name: PHPUnit (unit + kernel)
         env:
@@ -97,23 +113,24 @@ jobs:
         run: |
           dirs=""
           for suite in Unit Kernel; do
-            d="{{MODULE_PATH}}/tests/src/$suite"
-            [ -d "$d" ] && dirs="$dirs $d"
+            for d in $(find $LINT_PATHS -type d -path "*/tests/src/$suite" 2>/dev/null); do
+              dirs="$dirs $d"
+            done
           done
           if [ -n "$dirs" ]; then
             vendor/bin/phpunit -c web/core $dirs
           else
-            echo "No Unit/Kernel tests found under {{MODULE_PATH}}; skipping."
+            echo "No Unit/Kernel tests found under $LINT_PATHS; skipping."
           fi
 
       - name: Check for JS/CSS/YAML files
         id: frontend_check
         run: |
-          if find {{MODULE_PATH}} \( -name '*.js' -o -name '*.yml' -o -name '*.css' \) -print -quit | grep -q .; then
+          if find $LINT_PATHS \( -name '*.js' -o -name '*.yml' -o -name '*.css' \) -print -quit | grep -q .; then
             echo "found=true" >> "$GITHUB_OUTPUT"
           else
             echo "found=false" >> "$GITHUB_OUTPUT"
-            echo "No .js, .yml, or .css files found under {{MODULE_PATH}}; skipping ESLint/Stylelint setup."
+            echo "No .js, .yml, or .css files found under $LINT_PATHS; skipping ESLint/Stylelint setup."
           fi
 
       - name: Set up Node
@@ -132,52 +149,65 @@ jobs:
       - name: ESLint (Drupal core config)
         if: steps.frontend_check.outputs.found == 'true'
         run: |
-          if find {{MODULE_PATH}} \( -name '*.js' -o -name '*.yml' \) -print -quit | grep -q .; then
-            node web/core/node_modules/.bin/eslint {{MODULE_PATH}} \
-              --no-error-on-unmatched-pattern \
-              --ignore-pattern='*.es6.js' \
-              --resolve-plugins-relative-to=web/core \
-              --ext=.js,.yml \
-              -c web/core/.eslintrc.passing.json
-          else
-            echo "No .js or .yml files found under {{MODULE_PATH}}; skipping eslint."
-          fi
+          for p in $LINT_PATHS; do
+            if find "$p" \( -name '*.js' -o -name '*.yml' \) -print -quit | grep -q .; then
+              node web/core/node_modules/.bin/eslint "$p" \
+                --no-error-on-unmatched-pattern \
+                --ignore-pattern='*.es6.js' \
+                --resolve-plugins-relative-to=web/core \
+                --ext=.js,.yml \
+                -c web/core/.eslintrc.passing.json
+            else
+              echo "No .js or .yml files found under $p; skipping eslint."
+            fi
+          done
 
       - name: Stylelint (Drupal core config)
         if: steps.frontend_check.outputs.found == 'true'
         run: |
-          if find {{MODULE_PATH}} -name '*.css' -print -quit | grep -q .; then
-            web/core/node_modules/.bin/stylelint --config web/core/.stylelintrc.json "{{MODULE_PATH}}/**/*.css"
-          else
-            echo "No .css files found under {{MODULE_PATH}}; skipping stylelint."
-          fi
+          for p in $LINT_PATHS; do
+            if find "$p" -name '*.css' -print -quit | grep -q .; then
+              web/core/node_modules/.bin/stylelint --config web/core/.stylelintrc.json "$p/**/*.css"
+            else
+              echo "No .css files found under $p; skipping stylelint."
+            fi
+          done
 
   prettier:
     name: Prettier
     needs: guard
     if: needs.guard.outputs.run == 'true'
     runs-on: ubuntu-latest
+    env:
+      # The custom code workspace. Keep in step with LINT_PATHS in the Makefile.
+      LINT_PATHS: web/modules/custom web/themes/custom
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version: '20'
       - run: npm install --no-audit --no-fund
+      - name: Ensure the custom code paths exist
+        run: mkdir -p $LINT_PATHS
       - name: Prettier
         run: |
-          if find {{MODULE_PATH}} \( -name '*.css' -o -name '*.js' -o -name '*.json' -o -name '*.yml' -o -name '*.yaml' -o -name '*.md' \) -print -quit | grep -q .; then
-            npx prettier --check "{{MODULE_PATH}}/**/*.{css,js,json,yml,yaml,md}"
-          else
-            echo "No matching files found under {{MODULE_PATH}}; skipping prettier."
-          fi
+          for p in $LINT_PATHS; do
+            if find "$p" \( -name '*.css' -o -name '*.js' -o -name '*.json' -o -name '*.yml' -o -name '*.yaml' -o -name '*.md' \) -print -quit | grep -q .; then
+              npx prettier --check --no-error-on-unmatched-pattern "$p/**/*.{css,js,json,yml,yaml,md}"
+            else
+              echo "No matching files found under $p; skipping prettier."
+            fi
+          done
 
       - name: CSpell
         run: |
-          if find {{MODULE_PATH}} -type f -print -quit | grep -q .; then
-            npx cspell --no-progress "{{MODULE_PATH}}/**"
-          else
-            echo "No files found under {{MODULE_PATH}}; skipping cspell."
-          fi
+          for p in $LINT_PATHS; do
+            if find "$p" -type f -print -quit | grep -q .; then
+              npx cspell --no-progress --no-must-find-files "$p/**"
+            else
+              echo "No files found under $p; skipping cspell."
+            fi
+          done
 
   # Needs live verification: this job has been validated for YAML syntax only,
   # not run against real CI infrastructure yet. Installing the LocalGov

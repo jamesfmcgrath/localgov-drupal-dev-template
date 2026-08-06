@@ -1,12 +1,14 @@
 # Drupal Development Guidelines
 
-This is a Drupal 10/11 project{{MODULE_INTRO}}. Follow these guidelines when working on Drupal code.
+This is a Drupal 10/11 project{{MODULE_INTRO}}{{THEME_INTRO}}. Follow these guidelines when working on Drupal code.
 
 This file is the single source of truth for AI coding tools. Cursor reads it natively; Claude Code loads it via the `@AGENTS.md` import in `CLAUDE.md`. Edit this file, not the stub.
 
 ## Project Context
 
 - **Module:** {{MODULE_LINE}}
+- **Theme:** {{THEME_LINE}}
+- **Custom code workspace:** `web/modules/custom/` and `web/themes/custom/`. Both are covered by `make check` and CI; keep new custom code inside them.
 - **DDEV:** `{{DDEV_NAME}}` at `{{DDEV_URL}}` (PHP 8.3, nginx-fpm)
 - **Stack:** Drupal 10.2+, LocalGov Drupal (LGD)
 - **Do not use git worktrees**, work directly in the repo on the feature branch
@@ -46,6 +48,15 @@ Never run `drush`, `php`, or `composer` directly outside DDEV, PHP versions will
 - Use `rem`/`em` for type and spacing so user font scaling works; `px` only for borders and fine detail.
 - Format front-end assets with Prettier (`make format`).
 
+### Single Directory Components (SDC)
+
+- Build new theme components as single directory components: one folder under the theme's `components/` directory holding the Twig template, the component definition, and that component's CSS and JS.
+- Every component ships a `component.yml` with typed props (`props` schema, with `type`, `title`, and sensible defaults) and declared `slots` for anything the caller passes in as markup. An untyped prop is a bug.
+- Component CSS and JS attach through the component itself (`libraryOverrides`, or the CSS/JS files the component picks up automatically), never through a loose theme-wide library. A component's assets load only when the component renders.
+- Render components with `{% include %}`/`{% embed %}` against the `theme_name:component_name` id; do not reach into another component's internals.
+- Scaffold with `drush generate single-directory-component` (`make component NAME=...`) rather than hand-rolling the folder, so the definition file and structure match core's expectations.
+- Accessibility and the Front-end Standards above apply per component: semantic markup, keyboard operability, and contrast are part of the component, not a later pass.
+
 ## Accessibility
 
 Council and public sector sites fall under the EU Web Accessibility Directive: legal minimum WCAG 2.1 AA (EN 301 549), and the 2026 EN update adopts WCAG 2.2 AA, so build and review to 2.2 AA. Treat accessibility findings like security findings: they block merge.
@@ -79,5 +90,5 @@ Install once via `./scripts/setup.sh` (see README).
 ## Working Rules
 
 - Work incrementally: small, self-contained changes, tested as you go.
-- Any PHP change ships with PHPUnit tests confirming correct behaviour; run the module test suite plus `phpcbf` then `phpcs` before considering a change done. PHP and front-end changes must pass `make check`, which mirrors the git.drupalcode.org default validation pipeline (phpcs, phpstan, twig-cs-fixer, cspell, eslint, stylelint).
+- Any PHP change ships with PHPUnit tests confirming correct behaviour; run the custom code test suite plus `phpcbf` then `phpcs` before considering a change done. PHP and front-end changes must pass `make check`, which mirrors the git.drupalcode.org default validation pipeline (phpcs, phpstan, twig-cs-fixer, cspell, eslint, stylelint).
 - No em dashes in output. No code comments unless essential.

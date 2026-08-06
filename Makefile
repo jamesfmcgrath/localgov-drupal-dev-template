@@ -5,12 +5,24 @@
 
 .PHONY: help start stop restart open logs si install enable cr \
         test lint lint-fix stan check format format-check twig-lint twig-fix \
-        spell lint-js lint-css module-ci \
+        spell lint-js lint-css module-ci subtheme component \
         mod-log mod-status mod-fetch mod-branch tag switch mr \
-        guard-module-name guard-module-git
+        guard-module-name guard-module-git guard-theme-name
 
 MODULE = {{MODULE_PATH}}
 MODULE_NAME = {{MODULE_NAME}}
+
+THEME_PATH = {{THEME_PATH}}
+THEME_NAME = {{THEME_NAME}}
+THEME_LABEL = {{THEME_LABEL}}
+DRUPAL_FLAVOUR = {{DRUPAL_FLAVOUR}}
+
+# The custom code workspace. Every quality target below iterates over these
+# paths, so a project can hold any number of custom modules and themes. Add a
+# path here to widen the workspace. The module targets (enable, module-ci, the
+# mod-* git helpers) stay scoped to $(MODULE); the theme targets stay scoped to
+# $(THEME_PATH).
+LINT_PATHS = web/modules/custom web/themes/custom
 
 ## == Environment ==============================================================
 
@@ -55,87 +67,155 @@ enable: guard-module-name ## Enable the module
 cr: ## Clear Drupal caches
 	ddev drush cr
 
+## == Theme ====================================================================
+
+guard-theme-name:
+	@if [ -z "$(THEME_NAME)" ]; then \
+	  echo "No theme configured. Add one under web/themes/custom/ and set THEME_NAME, THEME_LABEL, and THEME_PATH in the Makefile."; \
+	  exit 1; \
+	fi
+
+subtheme: guard-theme-name ## Scaffold the custom theme at $(THEME_PATH)
+	@if [ -d "$(THEME_PATH)" ]; then \
+	  echo "$(THEME_PATH) already exists; not scaffolding over it."; \
+	  exit 1; \
+	fi
+	@if [ "$(DRUPAL_FLAVOUR)" = "localgov" ] && [ -f web/themes/contrib/localgov_base/scripts/create_subtheme.sh ]; then \
+	  echo "Creating a localgov_base subtheme: $(THEME_LABEL) ($(THEME_NAME))"; \
+	  ddev exec sh -c 'cd web/themes/contrib/localgov_base && printf "%s\n%s\n" "$(THEME_LABEL)" "$(THEME_NAME)" | bash scripts/create_subtheme.sh'; \
+	elif [ "$(DRUPAL_FLAVOUR)" = "localgov" ]; then \
+	  echo "localgov_base not found at web/themes/contrib/localgov_base."; \
+	  echo "Install it first (ddev composer require drupal/localgov_base), then re-run make subtheme."; \
+	  exit 1; \
+	else \
+	  echo "Generating a starterkit theme: $(THEME_LABEL) ($(THEME_NAME))"; \
+	  ddev exec php web/core/scripts/drupal generate-theme $(THEME_NAME) --name "$(THEME_LABEL)" --path themes/custom; \
+	fi
+	@echo ""
+	@echo "Next: ddev drush theme:enable $(THEME_NAME) -y"
+	@echo "      ddev drush config:set system.theme default $(THEME_NAME) -y"
+
+component: guard-theme-name ## Scaffold a single directory component (usage: make component NAME=card)
+	@test -n "$(NAME)" || (echo "Usage: make component NAME=card" && exit 1)
+	@echo "Generating a single directory component."
+	@echo "Answer the prompts with theme '$(THEME_NAME)' and component machine name '$(NAME)'."
+	ddev drush generate single-directory-component
+
 ## == Quality ==================================================================
 
-test: ## Run the module PHPUnit tests
-	@if find $(MODULE) -type f -print -quit 2>/dev/null | grep -q .; then \
-	  ddev exec vendor/bin/phpunit -c web/core $(MODULE); \
-	else \
-	  echo "No files under $(MODULE); skipping phpunit (site-only project?)."; \
-	fi
+test: ## Run PHPUnit across the custom code paths
+	@for p in $(LINT_PATHS); do \
+	  if find "$$p" -type f -print -quit 2>/dev/null | grep -q .; then \
+	    ddev exec vendor/bin/phpunit -c web/core "$$p" || exit $$?; \
+	  else \
+	    echo "No files under $$p; skipping phpunit."; \
+	  fi; \
+	done
 
-lint: ## Run PHPCS against the module
-	@if find $(MODULE) -type f -print -quit 2>/dev/null | grep -q .; then \
-	  ddev exec vendor/bin/phpcs $(MODULE); \
-	else \
-	  echo "No files under $(MODULE); skipping phpcs (site-only project?)."; \
-	fi
+lint: ## Run PHPCS across the custom code paths
+	@for p in $(LINT_PATHS); do \
+	  if find "$$p" -type f -print -quit 2>/dev/null | grep -q .; then \
+	    ddev exec vendor/bin/phpcs "$$p" || exit $$?; \
+	  else \
+	    echo "No files under $$p; skipping phpcs."; \
+	  fi; \
+	done
 
 lint-fix: ## Auto-fix PHPCS violations with PHPCBF
-	@if find $(MODULE) -type f -print -quit 2>/dev/null | grep -q .; then \
-	  ddev exec vendor/bin/phpcbf $(MODULE); \
-	else \
-	  echo "No files under $(MODULE); skipping phpcbf (site-only project?)."; \
-	fi
+	@for p in $(LINT_PATHS); do \
+	  if find "$$p" -type f -print -quit 2>/dev/null | grep -q .; then \
+	    ddev exec vendor/bin/phpcbf "$$p" || exit $$?; \
+	  else \
+	    echo "No files under $$p; skipping phpcbf."; \
+	  fi; \
+	done
 
-stan: ## Run PHPStan static analysis
-	@if find $(MODULE) -type f -print -quit 2>/dev/null | grep -q .; then \
-	  ddev exec vendor/bin/phpstan analyse $(MODULE); \
-	else \
-	  echo "No files under $(MODULE); skipping phpstan (site-only project?)."; \
-	fi
+stan: ## Run PHPStan static analysis across the custom code paths
+	@for p in $(LINT_PATHS); do \
+	  if find "$$p" -type f -print -quit 2>/dev/null | grep -q .; then \
+	    ddev exec vendor/bin/phpstan analyse "$$p" || exit $$?; \
+	  else \
+	    echo "No files under $$p; skipping phpstan."; \
+	  fi; \
+	done
 
 twig-lint: ## Lint Twig templates
-	@if find $(MODULE) -name '*.twig' -print -quit 2>/dev/null | grep -q .; then \
-	  ddev exec vendor/bin/twig-cs-fixer lint $(MODULE); \
-	else \
-	  echo "No .twig files under $(MODULE); skipping twig-cs-fixer."; \
-	fi
+	@for p in $(LINT_PATHS); do \
+	  if find "$$p" -name '*.twig' -print -quit 2>/dev/null | grep -q .; then \
+	    ddev exec vendor/bin/twig-cs-fixer lint "$$p" || exit $$?; \
+	  else \
+	    echo "No .twig files under $$p; skipping twig-cs-fixer."; \
+	  fi; \
+	done
 
 twig-fix: ## Auto-fix Twig template violations
-	@if find $(MODULE) -name '*.twig' -print -quit 2>/dev/null | grep -q .; then \
-	  ddev exec vendor/bin/twig-cs-fixer lint $(MODULE) --fix; \
-	else \
-	  echo "No .twig files under $(MODULE); skipping twig-cs-fixer."; \
-	fi
+	@for p in $(LINT_PATHS); do \
+	  if find "$$p" -name '*.twig' -print -quit 2>/dev/null | grep -q .; then \
+	    ddev exec vendor/bin/twig-cs-fixer lint "$$p" --fix || exit $$?; \
+	  else \
+	    echo "No .twig files under $$p; skipping twig-cs-fixer."; \
+	  fi; \
+	done
 
-spell: ## Spell-check the module with cspell
-	@if find $(MODULE) -type f -print -quit 2>/dev/null | grep -q .; then \
-	  ddev exec npx cspell --no-progress "$(MODULE)/**"; \
-	else \
-	  echo "No files found under $(MODULE); skipping cspell."; \
-	fi
+spell: ## Spell-check the custom code with cspell
+	@for p in $(LINT_PATHS); do \
+	  if find "$$p" -type f -print -quit 2>/dev/null | grep -q .; then \
+	    ddev exec npx cspell --no-progress "$$p/**" || exit $$?; \
+	  else \
+	    echo "No files found under $$p; skipping cspell."; \
+	  fi; \
+	done
 
-lint-js: ## Lint module JS/YAML with Drupal core's ESLint config
+lint-js: ## Lint custom JS/YAML with Drupal core's ESLint config
 	@if [ ! -d web/core/node_modules ]; then \
 	  echo "web/core/node_modules not found; run: ddev exec sh -c \"cd web/core && corepack enable && yarn install\""; \
-	elif find $(MODULE) \( -name '*.js' -o -name '*.yml' \) -print -quit 2>/dev/null | grep -q .; then \
-	  ddev exec node web/core/node_modules/.bin/eslint $(MODULE) \
-	    --no-error-on-unmatched-pattern \
-	    --ignore-pattern='*.es6.js' \
-	    --resolve-plugins-relative-to=web/core \
-	    --ext=.js,.yml \
-	    -c web/core/.eslintrc.passing.json; \
-	else \
-	  echo "No .js or .yml files found under $(MODULE); skipping eslint."; \
-	fi
+	  exit 0; \
+	fi; \
+	for p in $(LINT_PATHS); do \
+	  if find "$$p" \( -name '*.js' -o -name '*.yml' \) -print -quit 2>/dev/null | grep -q .; then \
+	    ddev exec node web/core/node_modules/.bin/eslint "$$p" \
+	      --no-error-on-unmatched-pattern \
+	      --ignore-pattern='*.es6.js' \
+	      --resolve-plugins-relative-to=web/core \
+	      --ext=.js,.yml \
+	      -c web/core/.eslintrc.passing.json || exit $$?; \
+	  else \
+	    echo "No .js or .yml files found under $$p; skipping eslint."; \
+	  fi; \
+	done
 
-lint-css: ## Lint module CSS with Drupal core's Stylelint config
+lint-css: ## Lint custom CSS with Drupal core's Stylelint config
 	@if [ ! -d web/core/node_modules ]; then \
 	  echo "web/core/node_modules not found; run: ddev exec sh -c \"cd web/core && corepack enable && yarn install\""; \
-	elif find $(MODULE) -name '*.css' -print -quit 2>/dev/null | grep -q .; then \
-	  ddev exec web/core/node_modules/.bin/stylelint --config web/core/.stylelintrc.json "$(MODULE)/**/*.css"; \
-	else \
-	  echo "No .css files found under $(MODULE); skipping stylelint."; \
-	fi
+	  exit 0; \
+	fi; \
+	for p in $(LINT_PATHS); do \
+	  if find "$$p" -name '*.css' -print -quit 2>/dev/null | grep -q .; then \
+	    ddev exec web/core/node_modules/.bin/stylelint --config web/core/.stylelintrc.json "$$p/**/*.css" || exit $$?; \
+	  else \
+	    echo "No .css files found under $$p; skipping stylelint."; \
+	  fi; \
+	done
 
 check: lint stan test twig-lint spell lint-js lint-css ## Run all quality checks (lint + stan + test + twig-lint + spell + lint-js + lint-css)
 
 format: ## Format front-end assets with Prettier (CSS/JS/JSON/YAML/MD)
-	ddev exec npx prettier --write "$(MODULE)/**/*.{css,js,json,yml,yaml,md}"
+	@for p in $(LINT_PATHS); do \
+	  if find "$$p" -type f -print -quit 2>/dev/null | grep -q .; then \
+	    ddev exec npx prettier --write --no-error-on-unmatched-pattern "$$p/**/*.{css,js,json,yml,yaml,md}" || exit $$?; \
+	  else \
+	    echo "No files found under $$p; skipping prettier."; \
+	  fi; \
+	done
 
 format-check: ## Check Prettier formatting without writing
-	ddev exec npx prettier --check "$(MODULE)/**/*.{css,js,json,yml,yaml,md}"
+	@for p in $(LINT_PATHS); do \
+	  if find "$$p" -type f -print -quit 2>/dev/null | grep -q .; then \
+	    ddev exec npx prettier --check --no-error-on-unmatched-pattern "$$p/**/*.{css,js,json,yml,yaml,md}" || exit $$?; \
+	  else \
+	    echo "No files found under $$p; skipping prettier."; \
+	  fi; \
+	done
 
 ## == drupal.org pipeline parity ===============================================
 

@@ -11,7 +11,7 @@ flavours and supported Drupal versions working; only {{UPPER_SNAKE}} names
 are template tokens and GitHub Actions ${{ }} expressions must never be
 touched.
 
-## Status (2026-08-05)
+## Status (2026-08-06)
 
 - Stage 1, reviewer gates upstreamed to the skill fork: DONE
   (jamesfmcgrath/drupal-agent-resources commit 1dc398c; setup.sh fetches from
@@ -67,6 +67,19 @@ touched.
   2.2 AA to match AGENTS.md. .pa11yci replaced by a11y-urls.json (same 3
   paths). Needs live verification: only checked for YAML syntax and a local
   dry run, not run against GitHub Actions infrastructure.
+- Stage 10, workspace generalisation and theme mode: DONE at the tokeniser and
+  tooling level (2026-08-06). Single-module scoping replaced by LINT_PATHS
+  ("web/modules/custom web/themes/custom"), mirrored in the Makefile,
+  phpcs.xml.dist, phpstan.neon, package.json, and ci.yml. init.sh gained
+  optional theme prompts (THEME_NAME, THEME_LABEL, THEME_PATH, plus derived
+  DRUPAL_FLAVOUR and composed THEME_INTRO/THEME_LINE/THEME_LAYER), so all four
+  module/theme combinations work. New Makefile targets subtheme and component;
+  AGENTS.md gained an SDC section. Regression suite grew from 134 to 385
+  checks, all passing. Needs live verification: make subtheme end to end on
+  both branches (the localgov piped-answers path was proven against
+  localgov_base 2.x outside DDEV, the ddev exec wrapping and core's
+  generate-theme call were not run), and pre-filling make component's answers
+  once drush's --answer ordering for the SDC generator is confirmed.
 
 ---
 

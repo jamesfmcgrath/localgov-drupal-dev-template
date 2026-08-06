@@ -1,6 +1,6 @@
 # LocalGov Drupal dev-environment template
 
-A starting point for working locally on a Drupal 10/11 module or site, with Claude Code and Cursor agent resources, coding standards, and DDEV wiring already set up. Built for LocalGov Drupal (council) projects, but works for any Drupal project.
+A starting point for working locally on a Drupal 10/11 module, theme, or site, with Claude Code and Cursor agent resources, coding standards, and DDEV wiring already set up. Built for LocalGov Drupal (council) projects, but works for any Drupal project.
 
 ## What you get
 
@@ -8,10 +8,12 @@ A starting point for working locally on a Drupal 10/11 module or site, with Clau
 - Shared coding, review, and accessibility standards in a single `AGENTS.md` (read natively by Cursor and most agents; Claude Code loads it via the `@AGENTS.md` import in the `CLAUDE.md` stub).
 - An accessibility audit workflow (`.claude/commands/a11y-check.md`): axe-core scan plus keyboard, reflow, and motion passes, aimed at WCAG 2.2 AA (the public sector legal floor is WCAG 2.1 AA / EN 301 549).
 - A DDEV config and a one-command `scripts/setup.sh` that starts DDEV, scaffolds a Drupal project (LocalGov, vanilla, or Drupal CMS, chosen at init), installs the site, adds dev tooling, and enables your module if you configured one (site-only projects skip that step).
+- A custom code workspace rather than a single hard-coded module: the quality tooling scopes to `web/modules/custom` and `web/themes/custom` (the `LINT_PATHS` list), so a project can hold any number of custom modules and themes and still get one `make check`.
+- An optional custom theme alongside the optional module, so module only, theme only, both, or neither all work. `make subtheme` scaffolds the theme: a LocalGov Base subtheme via the generator LocalGov Base ships, or Drupal core's starterkit generator on vanilla and Drupal CMS. `make component NAME=x` adds a single directory component.
 - PHP tooling wired to the Makefile: PHPCS (Drupal, DrupalPractice), PHPStan (phpstan-drupal), PHPUnit, Twig CS Fixer for Twig templates (Prettier does not lint Twig), plus Prettier for front-end assets.
 - A GitHub Actions CI workflow (`.github/workflows/ci.yml`) running PHPCS, PHPStan, Twig CS Fixer, PHPUnit (unit + kernel), the Prettier check, and an axe-core (via Playwright) accessibility job (WCAG 2.2 AA, against an installed sqlite site) on push and pull request.
 - drupal.org (git.drupalcode.org) pipeline parity: `assets/module.gitlab-ci.yml` is a ready `.gitlab-ci.yml` for the module, copied in with `make module-ci`. Local tooling mirrors the same pipeline's default validation jobs, cspell (`make spell`), ESLint and Stylelint (`make lint-js`, `make lint-css`) using Drupal core's own configs, alongside the existing PHPCS/PHPStan/Twig CS Fixer, so `make check` predicts what runs there. Twig CS Fixer is skipped by default upstream; the shipped pipeline turns it back on to match this template's local tooling. Nightwatch (browser JS tests) and Composer Lint have no local or GitHub Actions equivalent and stay CI-only. The cspell config and dictionary (`cspell.json`, `.cspell-project-words.txt`) live at this template's root, not in `make module-ci`'s copy; a module split into its own drupalcode repo needs its own copy of those two files for full parity on that job.
-- A `scripts/test-template.sh` regression suite that exercises `init.sh` across every supported flavour/version combo, wired into CI so the bare template gets a real, green run instead of skipping everything.
+- A `scripts/test-template.sh` regression suite that exercises `init.sh` across every supported flavour/version combo and all four module/theme combinations, wired into CI so the bare template gets a real, green run instead of skipping everything.
 - A `scripts/init.sh` that turns the template into your project by filling in a handful of tokens.
 
 ## Requirements
@@ -38,7 +40,7 @@ A starting point for working locally on a Drupal 10/11 module or site, with Clau
    ./scripts/init.sh
    ```
 
-   It asks for the module name (leave blank for a site-only project, which skips the module label/path/repo prompts) and path, DDEV site, client, skill fork, and the Drupal flavour (`localgov`, `vanilla`, or `cms`) and version (`11` or `10`; Drupal CMS is Drupal 11 only). It tokenises every file, then removes itself.
+   It asks for the module name (leave blank to skip the module, which also skips the module label/path/repo prompts) and path, the theme name (leave blank for no custom theme, which also skips the theme label prompt), DDEV site, client, skill fork, and the Drupal flavour (`localgov`, `vanilla`, or `cms`) and version (`11` or `10`; Drupal CMS is Drupal 11 only). Module and theme are independent, so module only, theme only, both, and neither are all valid. It tokenises every file, then removes itself.
 3. Spin the whole environment up with one command:
 
    ```bash
@@ -56,16 +58,19 @@ To reinstall or switch profile later, run `./scripts/install-drupal` (interactiv
 
 | Token | Example |
 |---|---|
-| `{{MODULE_NAME}}` | `localgov_bus_data` (blank for a site-only project) |
+| `{{MODULE_NAME}}` | `localgov_bus_data` (blank for no custom module) |
 | `{{MODULE_LABEL}}` | `LocalGov Bus Data` |
 | `{{MODULE_PATH}}` | `web/modules/custom/localgov_bus_data` |
 | `{{MODULE_REPO}}` | `git@git.drupal.org:project/localgov_bus_data.git` |
+| `{{THEME_NAME}}` | `cumberland_theme` (blank for no custom theme) |
+| `{{THEME_LABEL}}` | `Cumberland Theme` |
+| `{{THEME_PATH}}` | `web/themes/custom/cumberland_theme` |
 | `{{DDEV_NAME}}` | `lgd-bus-data-dev` |
 | `{{DDEV_URL}}` | `https://lgd-bus-data-dev.ddev.site` |
 | `{{CLIENT}}` | `Cumberland Council bus timetables` |
 | `{{SKILL_FORK}}` | `jamesfmcgrath` |
 
-From your flavour/version answers, `init.sh` also derives `{{DRUPAL_TYPE}}` (DDEV type, e.g. `drupal11`), `{{COMPOSER_PROJECT}}` (e.g. `drupal/localgov_project`), and `{{INSTALL_PROFILE}}` (e.g. `localgov`).
+From your flavour/version answers, `init.sh` also derives `{{DRUPAL_TYPE}}` (DDEV type, e.g. `drupal11`), `{{DRUPAL_FLAVOUR}}` (`localgov`, `vanilla`, or `cms`), `{{COMPOSER_PROJECT}}` (e.g. `drupal/localgov_project`), and `{{INSTALL_PROFILE}}` (e.g. `localgov`).
 
 ## Common commands
 
@@ -78,6 +83,8 @@ make install       # Clean install, choose a profile
 make si            # Fresh LocalGov install
 make enable        # Enable the module
 make cr            # Clear caches
+make subtheme      # Scaffold the custom theme (LocalGov Base subtheme or core starterkit)
+make component NAME=promo_card   # Scaffold a single directory component
 make test          # PHPUnit (also lint / lint-fix / stan)
 make check         # lint + stan + test + twig-lint + spell + lint-js + lint-css
 make twig-lint     # Lint Twig templates (also twig-fix)
@@ -89,6 +96,7 @@ make switch BRANCH=1.0.x     # also: make mr MR=123, make tag VERSION=1.0.0-alph
 
 ## Notes
 
+- Custom code lives in the workspace the quality tooling scopes to: `web/modules/custom` and `web/themes/custom`. That list is `LINT_PATHS` in the `Makefile`, and it is mirrored in `phpcs.xml.dist`, `phpstan.neon`, `package.json`, and the `LINT_PATHS` job env var in `.github/workflows/ci.yml`. To widen it, add the path in those five places. The module-specific targets (`enable`, `module-ci`, `mod-*`) stay scoped to the configured module; `subtheme` and `component` stay scoped to the configured theme.
 - Agent resource folders (`.claude/skills/`, `.cursor/skills/`) are gitignored and reproduced by `agr` from `agr.toml` + `agr.lock`. Do not vendor copies. Tracked canonical files: `AGENTS.md`, `CLAUDE.md` (import stub), `agr.toml`, `.claude/agents/`, `.claude/commands/`, `.claude/settings.local.json.dist`.
 - The `drupal-localgov` skill is hosted in a fork of `drupal-agent-resources` (`{{SKILL_FORK}}/drupal-agent-resources`). Point `{{SKILL_FORK}}` at whichever fork you maintain.
 - `agr.lock` is not committed in this bare template, since `{{SKILL_FORK}}` is still a token and agr cannot resolve it into a lock. `scripts/setup.sh` runs `agr sync`/`agr add` on first run, after `init.sh` has substituted a real GitHub owner, which generates `agr.lock`. Commit that generated `agr.lock` in the project created from this template so skill versions are pinned for the rest of the team.

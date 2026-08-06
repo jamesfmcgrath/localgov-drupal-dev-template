@@ -4,9 +4,11 @@ includes:
   - vendor/phpstan/phpstan-deprecation-rules/rules.neon
 
 parameters:
-  # Start conservative; raise the level as the module hardens.
+  # Start conservative; raise the level as the custom code hardens.
   level: 2
+  # The custom code workspace. Keep in step with LINT_PATHS in the Makefile.
   paths:
-    - {{MODULE_PATH}}
+    - web/modules/custom
+    - web/themes/custom
   drupal:
     drupalRoot: web

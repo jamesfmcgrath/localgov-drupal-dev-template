@@ -1,6 +1,6 @@
 # Project memory: localgov-drupal-dev-template
 
-Last updated: 2026-08-05
+Last updated: 2026-08-06
 
 ## What this is
 
@@ -17,8 +17,18 @@ staged improvement prompts and their status live in PROMPTS.md.
 - cms (Drupal CMS): Drupal 11 only (drupal/cms, recipe
   recipes/drupal_cms_starter). Tokeniser-level support DONE (2026-08-05); full
   spin-up needs a live run.
-- Usage modes: module mode (module name given) and site-only mode (blank
-  module name). Both must keep working.
+- Usage modes: module and theme are independent optional prompts, so four
+  combinations. Module only, theme only, both, and neither must all keep
+  working.
+
+## Custom code workspace
+
+Quality tooling scopes to LINT_PATHS ("web/modules/custom web/themes/custom"),
+not to a single module. Mirrored in five places: Makefile (LINT_PATHS),
+phpcs.xml.dist (file entries), phpstan.neon (paths), package.json (globs), and
+.github/workflows/ci.yml (job-level env var). Change it in all five or none.
+$(MODULE) and $(MODULE_NAME) stay for enable, module-ci, and the mod-* targets;
+$(THEME_PATH) stays for subtheme and component.
 
 ## Verification status
 
@@ -43,6 +53,12 @@ staged improvement prompts and their status live in PROMPTS.md.
 - Stage 7 optional module / site-only mode: DONE.
 - Stage 8 drupal.org (GitLab CI) pipeline parity: DONE.
 - Stage 9 axe-core + Playwright a11y (replacing pa11y-ci): DONE, WCAG 2.2 AA.
+- Stage 10 custom code workspace (LINT_PATHS) + optional theme: DONE at the
+  tokeniser and tooling level (2026-08-06). New tokens THEME_NAME, THEME_LABEL,
+  THEME_PATH, DRUPAL_FLAVOUR, plus composed THEME_INTRO, THEME_LINE,
+  THEME_LAYER. New targets: subtheme, component. AGENTS.md gained an SDC
+  section. Regression suite passes 385/385 across all four module/theme
+  combinations. make subtheme still needs a live DDEV run.
 
 ## Open items / needs live verification
 
@@ -65,6 +81,13 @@ staged improvement prompts and their status live in PROMPTS.md.
 - `make stan` can report a spurious exit 1 with zero real errors
   (ddev-exec/PHPStan interaction); not yet root-caused or fixed in the
   Makefile.
+- make subtheme end to end on both branches. The localgov branch's piped
+  answers were verified directly against localgov_base 2.x's
+  create_subtheme.sh outside DDEV; the ddev exec wrapping and core's
+  generate-theme call were not run.
+- make component pre-filling the component name. drush's --answer ordering for
+  the SDC generator could not be verified from the published docs, so the
+  target runs the generator interactively and prints the answers to give.
 
 ## Conventions (hard rules)
 
@@ -73,4 +96,5 @@ staged improvement prompts and their status live in PROMPTS.md.
 - Only UPPER_SNAKE names wrapped in double curly braces are tokens; GitHub
   Actions ${{ }} expressions must never be touched.
 - Run scripts/test-template.sh before calling any template change done.
-- Keep all flavours, both Drupal versions, and both usage modes working.
+- Keep all flavours, both Drupal versions, and all four module/theme
+  combinations working.

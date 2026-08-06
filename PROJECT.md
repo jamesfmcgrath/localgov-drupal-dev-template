@@ -20,24 +20,31 @@ it alongside this file when planning work.
 
 ### What the template contains
 
-- scripts/init.sh: one-time tokeniser. Prompts for module name/path, DDEV site,
-  client, skill fork, and Drupal flavour (localgov|vanilla|cms) + version
-  (11|10; the cms flavour forces Drupal 11).
-  A blank module name selects site-only mode (Stage 7): the label/path/repo
-  prompts are skipped, MODULE_PATH becomes web/modules/custom, and five
-  composed tokens (MODULE_INTRO, MODULE_LINE, MODULE_AFFECTS, PACKAGE_NAME,
-  PACKAGE_DESCRIPTION) keep AGENTS.md, a11y-check.md, and package.json reading
-  naturally either way. Substitutes {{TOKENS}} across files, then removes
-  itself, TEMPLATE.md, and scripts/test-template.sh. Must preserve file
-  executable bits (it writes back into files rather than mv-ing a temp over
-  them, and re-chmods the scripts).
+- scripts/init.sh: one-time tokeniser. Prompts for module name/path, theme
+  name/label, DDEV site, client, skill fork, and Drupal flavour
+  (localgov|vanilla|cms) + version (11|10; the cms flavour forces Drupal 11).
+  Module and theme are independent optional prompts, so all four combinations
+  are supported: module only, theme only, both, neither. A blank module name
+  skips the module label/path/repo prompts and makes MODULE_PATH
+  web/modules/custom; a blank theme name skips the theme label prompt and makes
+  THEME_PATH web/themes/custom. Eight composed tokens (MODULE_INTRO,
+  MODULE_LINE, MODULE_AFFECTS, THEME_INTRO, THEME_LINE, THEME_LAYER,
+  PACKAGE_NAME, PACKAGE_DESCRIPTION) keep AGENTS.md, a11y-check.md, and
+  package.json reading naturally in every combination. Substitutes {{TOKENS}}
+  across files, then removes itself, TEMPLATE.md, and scripts/test-template.sh.
+  Must preserve file executable bits (it writes back into files rather than
+  mv-ing a temp over them, and re-chmods the scripts).
 - scripts/test-template.sh: regression suite for the bare template. Copies the
-  repo to a throwaway dir per supported flavour/version combo, pipes scripted
-  answers into init.sh, and asserts the tokeniser and file invariants (no
-  leftover {{TOKENS}}, GitHub Actions ${{ }} expressions untouched, substituted
-  values present, scripts still parse and stay executable, JSON/YAML still
-  parse). No network, composer, or DDEV; the live spin-up still needs manual
-  verification. Removes itself on init, same as TEMPLATE.md.
+  repo to a throwaway dir per supported flavour/version combo and per
+  module/theme combination, pipes scripted answers into init.sh (via an
+  init_input helper that emits the right prompt sequence for each combination),
+  and asserts the tokeniser and file invariants (no leftover {{TOKENS}}, GitHub
+  Actions ${{ }} expressions untouched, substituted values present, THEME_*
+  values landing in the Makefile/AGENTS.md/a11y-check.md, LINT_PATHS covering
+  both custom code paths in all five places, scripts still parse and stay
+  executable, JSON/YAML/XML still parse, make -n help/module-ci/subtheme/
+  component all parse). No network, composer, or DDEV; the live spin-up still
+  needs manual verification. Removes itself on init, same as TEMPLATE.md.
 - scripts/setup.sh: one-command spin-up. Installs agr skills + drupal-reviewer,
   starts DDEV, scaffolds the Drupal project (composer create into a container
   temp dir then cp -n so template files are not clobbered), composer install,
@@ -57,6 +64,26 @@ it alongside this file when planning work.
   DDEV web_environment, vincentlanglet/twig-cs-fixer for Twig linting (Prettier
   does not cover Twig), Prettier (package.json + .prettierrc.json), a tokenised
   Makefile, .editorconfig.
+- Custom code workspace: the quality tooling scopes to a list of paths, not to
+  one module. LINT_PATHS in the Makefile defaults to
+  "web/modules/custom web/themes/custom" and the Makefile quality targets
+  (lint, lint-fix, stan, test, twig-lint, twig-fix, spell, lint-js, lint-css,
+  format, format-check) iterate over it, keeping the per-target
+  "no files, skipping" guards. The same list is mirrored as <file> entries in
+  phpcs.xml.dist, paths in phpstan.neon, globs in package.json, and a job-level
+  LINT_PATHS env var in .github/workflows/ci.yml: five places to keep in step.
+  setup.sh and CI mkdir -p both paths so a bare phpcs/phpstan run works on a
+  project that has only modules or only a theme. $(MODULE) and $(MODULE_NAME)
+  remain for enable, module-ci, and the mod-* git targets.
+- Theme targets: make subtheme scaffolds the configured theme at $(THEME_PATH),
+  guarded by guard-theme-name and by an already-exists check. On the localgov
+  flavour it feeds the theme label and machine name into
+  web/themes/contrib/localgov_base/scripts/create_subtheme.sh (the generator
+  LocalGov Base ships; verified against localgov_base 2.x, the current branch
+  since 1.x bug fixes ended December 2025); on vanilla and cms it runs
+  php web/core/scripts/drupal generate-theme <name> --name "<label>"
+  --path themes/custom. make component NAME=x wraps
+  drush generate single-directory-component.
 - CI: .github/workflows/ci.yml runs phpcs, phpstan, twig-cs-fixer (guarded to
   skip cleanly when the module has no .twig files), phpunit (unit+kernel,
   sqlite), a prettier check, and an a11y job. The a11y job installs the site
@@ -102,9 +129,12 @@ it alongside this file when planning work.
 
 ### Tokens (substituted by init.sh)
 
-Prompted: MODULE_NAME, MODULE_LABEL, MODULE_PATH, MODULE_REPO, DDEV_NAME,
-DDEV_URL, CLIENT, SKILL_FORK. Derived from flavour/version: DRUPAL_TYPE,
-COMPOSER_PROJECT, INSTALL_PROFILE. Only {{UPPER_SNAKE}} names are tokens; GitHub
+Prompted: MODULE_NAME, MODULE_LABEL, MODULE_PATH, MODULE_REPO, THEME_NAME,
+THEME_LABEL, DDEV_NAME, DDEV_URL, CLIENT, SKILL_FORK. Derived: THEME_PATH (from
+THEME_NAME), and from flavour/version DRUPAL_TYPE, DRUPAL_FLAVOUR,
+COMPOSER_PROJECT, INSTALL_PROFILE. Composed prose tokens: MODULE_INTRO,
+MODULE_LINE, MODULE_AFFECTS, THEME_INTRO, THEME_LINE, THEME_LAYER,
+PACKAGE_NAME, PACKAGE_DESCRIPTION. Only {{UPPER_SNAKE}} names are tokens; GitHub
 Actions ${{ ... }} expressions must be left untouched.
 
 ### Conventions
@@ -117,9 +147,12 @@ Actions ${{ ... }} expressions must be left untouched.
 - Scripts must stay executable and be committed as 100755.
 - Keep all three flavour branches (localgov, vanilla, cms) working, and both
   versions (10, 11) for localgov and vanilla; cms is Drupal 11 only.
-- Keep both usage modes working: site-only (blank module name) and module
-  mode (a module name given). Module mode's behaviour must never change as a
-  side effect of site-only work, or vice versa.
+- Keep all four module/theme combinations working: module only, theme only,
+  both, and neither. Module mode's behaviour must never change as a side
+  effect of theme or site-only work, or vice versa.
+- LINT_PATHS is mirrored in five places (Makefile, phpcs.xml.dist,
+  phpstan.neon, package.json, .github/workflows/ci.yml). Change it in all five
+  or in none.
 
 ### Working rules for any change
 
@@ -218,12 +251,44 @@ defect, and is deliberately left to fail rather than suppressed, so a cms site
 built from this template needs that home link given an accessible name before
 its a11y job passes.
 
+Stage 10, custom code workspace plus optional theme: DONE at the tokeniser and
+tooling level (2026-08-06). Single-module scoping is generalised into
+LINT_PATHS ("web/modules/custom web/themes/custom"), mirrored across the
+Makefile, phpcs.xml.dist, phpstan.neon, package.json, and ci.yml (job-level env
+var). Every Makefile quality target and every ci.yml tool step iterates over the
+list and keeps its "no files, skipping" guard; setup.sh and ci.yml mkdir -p both
+paths so bare phpcs/phpstan runs work on a project that has only modules or only
+a theme. Prettier and cspell gained --no-error-on-unmatched-pattern and
+--no-must-find-files respectively, both verified locally against prettier 3.9.6
+and cspell 9.8.0, so a second glob with no matches cannot fail a run that
+previously passed. init.sh gained optional theme prompts after the module
+prompts, with new tokens THEME_NAME, THEME_LABEL, THEME_PATH, DRUPAL_FLAVOUR and
+composed tokens THEME_INTRO, THEME_LINE, THEME_LAYER. New Makefile targets:
+subtheme (guard-theme-name plus an already-exists guard; localgov_base's
+create_subtheme.sh on the localgov flavour, core's generate-theme starterkit on
+vanilla and cms) and component (drush generate single-directory-component).
+AGENTS.md gained an SDC section under Front-end Standards. The regression suite
+now covers all four module/theme combinations and passes 385/385.
+
+Needs live verification from this stage: make subtheme end to end (both
+branches) requires DDEV. The localgov branch's piped-answers approach was
+verified directly against localgov_base 2.x's create_subtheme.sh outside DDEV
+(it accepts the label and machine name on stdin and writes
+themes/custom/<name>), but the ddev exec wrapping was not run. Core's
+generate-theme invocation was taken from the drupal.org starterkit
+documentation, not run. make component runs the drush generator interactively
+and prints the theme and component name to answer, because drush's --answer
+ordering for the SDC generator could not be verified from the published docs;
+pre-filling it is a follow-up once that ordering is confirmed against a live
+drush.
+
 Remaining open work: a handful of DDEV/composer/npm spin-ups remain marked
 "needs live verification": the cms flavour full spin-up, the a11y CI job on
-real GitHub Actions infrastructure, the site-only mode full spin-up, and make
-lint-js/lint-css plus the GitHub Actions eslint/stylelint steps against a live
-web/core frontend install. The `make stan` spurious-exit-1 caveat is not yet
-root-caused or fixed in the Makefile.
+real GitHub Actions infrastructure, the site-only mode full spin-up, make
+subtheme on both branches, and make lint-js/lint-css plus the GitHub Actions
+eslint/stylelint steps against a live web/core frontend install. The
+`make stan` spurious-exit-1 caveat is not yet root-caused or fixed in the
+Makefile.
 
 ## Start prompt
 
@@ -239,6 +304,6 @@ anything yet.
    versions, run the remaining live verifications). Flag anything currently
    untested.
 
-Follow the project conventions: no em dashes, keep both flavours and both Drupal
-versions working, and run scripts/test-template.sh before calling any template
-change done.
+Follow the project conventions: no em dashes, keep all three flavours and both
+Drupal versions working, keep all four module/theme combinations working, and
+run scripts/test-template.sh before calling any template change done.

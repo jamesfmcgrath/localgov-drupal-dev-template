@@ -90,6 +90,12 @@ info "Installing Composer dependencies..."
 ddev composer install
 success "Dependencies installed."
 
+# --- Custom code workspace ---
+# The quality tooling (LINT_PATHS in the Makefile, phpcs.xml.dist, phpstan.neon,
+# and CI) scopes to these paths. Create them up front so a bare phpcs or phpstan
+# run works on a project that has only modules, or only a theme, so far.
+mkdir -p web/modules/custom web/themes/custom
+
 # --- Dev tooling (lint / static analysis / tests) ---
 info "Adding PHP dev tooling..."
 # Pre-authorise the Composer plugins the dev tooling pulls in, so the require
