@@ -39,14 +39,30 @@ success "DDEV: $(ddev version | head -1)"
 
 # --- Agent resources (skills) ---
 info "Installing Claude Code / Cursor skills via agr..."
+# Skills are a convenience, not a prerequisite for a working site, so any agr
+# failure (most commonly: not run inside a git repository) warns and carries
+# on instead of aborting the whole spin-up under set -euo pipefail.
+agr_failed() {
+  warn "agr could not install the skills; continuing without them."
+  warn "agr must run inside a git repository. If this project is not one yet:"
+  warn "  git init && git add -A && git commit -m 'Initialise from template'"
+  warn "Then re-run: agr sync"
+}
 if command -v agr &>/dev/null; then
   if [ -f "agr.lock" ]; then
-    agr sync && success "Skills installed from agr.lock (agr sync)."
+    if agr sync; then
+      success "Skills installed from agr.lock (agr sync)."
+    else
+      agr_failed
+    fi
   else
-    agr add madsnorgaard/drupal-agent-resources/drupal-expert --overwrite
-    agr add madsnorgaard/drupal-agent-resources/ddev-expert --overwrite
-    agr add "${SKILL_FORK}/drupal-agent-resources/drupal-localgov" --overwrite
-    success "Skills installed (drupal-expert, ddev-expert, drupal-localgov)."
+    if agr add madsnorgaard/drupal-agent-resources/drupal-expert --overwrite \
+      && agr add madsnorgaard/drupal-agent-resources/ddev-expert --overwrite \
+      && agr add "${SKILL_FORK}/drupal-agent-resources/drupal-localgov" --overwrite; then
+      success "Skills installed (drupal-expert, ddev-expert, drupal-localgov)."
+    else
+      agr_failed
+    fi
   fi
 else
   warn "agr not found, skipping skills."

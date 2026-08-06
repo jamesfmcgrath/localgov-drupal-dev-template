@@ -26,10 +26,26 @@ ask() { # ask <prompt> <default> -> echoes answer
   else read -r -p "$prompt: " ans; echo "$ans"; fi
 }
 
-echo ""; info "Initialise this template"; echo ""
-MODULE_NAME="$(ask 'Module machine name (blank for a site-only project)' '')"
-
 titlecase() { echo "$1" | tr '_' ' ' | awk '{for(i=1;i<=NF;i++)$i=toupper(substr($i,1,1))substr($i,2)}1'; }
+
+ask_machine_name() { # ask_machine_name <prompt> -> echoes a valid name or empty
+  local prompt="$1" ans
+  while true; do
+    ans="$(ask "$prompt" '')"
+    [ -z "$ans" ] && { echo ""; return 0; }
+    case "$ans" in
+      [a-z]*) ;;
+      *) warn "Machine names must start with a lowercase letter." >&2; continue ;;
+    esac
+    if [ -z "$(printf '%s' "$ans" | tr -d 'a-z0-9_')" ]; then
+      echo "$ans"; return 0
+    fi
+    warn "Machine names may contain only lowercase letters, digits and underscores (for example my_module). Hyphens are not valid." >&2
+  done
+}
+
+echo ""; info "Initialise this template"; echo ""
+MODULE_NAME="$(ask_machine_name 'Module machine name (blank for a site-only project)')"
 
 if [ -n "$MODULE_NAME" ]; then
   MODULE_LABEL="$(ask 'Module label' "$(titlecase "$MODULE_NAME")")"
@@ -43,7 +59,7 @@ fi
 
 # Optional custom theme. Module and theme are independent: all four
 # combinations (module only, theme only, both, neither) are supported.
-THEME_NAME="$(ask 'Theme machine name (blank for no custom theme)' '')"
+THEME_NAME="$(ask_machine_name 'Theme machine name (blank for no custom theme)')"
 if [ -n "$THEME_NAME" ]; then
   THEME_LABEL="$(ask 'Theme label' "$(titlecase "$THEME_NAME")")"
   THEME_PATH="web/themes/custom/$THEME_NAME"
