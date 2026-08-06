@@ -179,6 +179,51 @@ else
   info "Site-only project: skipping module clone and enable."
 fi
 
+# --- Local development settings ---
+# Copied only when absent, so a re-run of setup.sh never clobbers local edits.
+info "Adding local development settings..."
+if [ ! -f "web/sites/default/settings.local.php" ]; then
+  cp assets/settings.local.php web/sites/default/settings.local.php
+  success "web/sites/default/settings.local.php created."
+else
+  success "web/sites/default/settings.local.php already present, not overwriting."
+fi
+if [ ! -f "web/sites/development.services.yml" ]; then
+  cp assets/development.services.yml web/sites/development.services.yml
+  success "web/sites/development.services.yml created."
+else
+  success "web/sites/development.services.yml already present, not overwriting."
+fi
+
+SETTINGS_PHP="web/sites/default/settings.php"
+if [ -f "$SETTINGS_PHP" ]; then
+  ACTIVE_INCLUDE="if (file_exists(\$app_root . '/' . \$site_path . '/settings.local.php')) {"
+  COMMENTED_INCLUDE="# if (file_exists(\$app_root . '/' . \$site_path . '/settings.local.php')) {"
+  if grep -qF "$ACTIVE_INCLUDE" "$SETTINGS_PHP" 2>/dev/null; then
+    success "settings.php already includes settings.local.php."
+  elif grep -qF "$COMMENTED_INCLUDE" "$SETTINGS_PHP" 2>/dev/null; then
+    info "Enabling the settings.local.php include in settings.php..."
+    line_no="$(grep -nF "$COMMENTED_INCLUDE" "$SETTINGS_PHP" | head -1 | cut -d: -f1)"
+    l2=$((line_no + 1)); l3=$((line_no + 2))
+    tmp="$(mktemp)"
+    awk -v a="$line_no" -v b="$l2" -v c="$l3" \
+      'NR==a || NR==b || NR==c { sub(/^# ?/, "") } { print }' \
+      "$SETTINGS_PHP" > "$tmp" && cat "$tmp" > "$SETTINGS_PHP" && rm -f "$tmp"
+    success "settings.local.php include enabled."
+  else
+    info "Appending the settings.local.php include to settings.php..."
+    {
+      echo ""
+      echo "$ACTIVE_INCLUDE"
+      echo "  include \$app_root . '/' . \$site_path . '/settings.local.php';"
+      echo "}"
+    } >> "$SETTINGS_PHP"
+    success "settings.local.php include appended."
+  fi
+else
+  warn "web/sites/default/settings.php not found; DDEV should have created it. Add the settings.local.php include manually after install."
+fi
+
 # --- Install the site ---
 if [ "$SKIP_INSTALL" -eq 0 ]; then
   info "Installing Drupal (profile: ${INSTALL_PROFILE})..."
