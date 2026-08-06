@@ -103,12 +103,21 @@ touched.
   throwaway copy under $TMPDIR breaks DDEV on this machine's Colima Docker
   provider (only $HOME is mounted into its VM) and had to be re-staged under
   $HOME; and setup.sh's `ddev drush recipe recipes/site_tools -y` /
-  `recipes/dev_tools -y` calls fail because ddev drush's cwd is the docroot,
-  not the project root, so both recipes silently fail to apply on every
-  project built from this template today (proposed fix, verified live:
-  `../recipes/site_tools` and `../recipes/dev_tools`). See PROJECT.md for
-  full detail; the setup.sh fix was not applied here, left for the
-  controller to action.
+  `recipes/dev_tools -y` calls failed because ddev drush's cwd is the
+  docroot, not the project root, so both recipes silently failed to apply on
+  every project built from this template. Fixed in commit 8f8a140
+  (`../recipes/site_tools` and `../recipes/dev_tools`), and a scoped
+  final-review pass re-checked the fix and confirmed it correct with no new
+  breakage. The `make recipe` Makefile target had the identical bug and was
+  fixed alongside it in the same review pass. See PROJECT.md for full detail,
+  including a further finding from that review: Twig debug was confirmed live
+  only on the localgov flavour, and only because localgov's own project
+  template already ships Twig debug on by itself; this feature's own
+  development.services.yml copy step is inert whenever the underlying Drupal
+  distribution already scaffolds its own file, which core-based
+  distributions, including vanilla and cms, do without enabling debug.
+  setup.sh now verifies Twig debug directly after the copy step instead of
+  assuming it. Vanilla and cms still need a live check.
 
 ---
 

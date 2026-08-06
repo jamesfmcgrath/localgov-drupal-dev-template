@@ -376,9 +376,7 @@ configured "Local" name and #0b6623 colour) only appears once logged in, so
 verification needed drush uli plus a cookie-jar curl rather than a bare
 anonymous request to the front page.
 
-Two real bugs were found and worked around in the throwaway copy (neither
-fixed in this repo's scripts/setup.sh, per the task's own instruction that
-that decision belongs to the controller):
+Two real bugs were found in the throwaway copy during this live verification:
 
 1. Staging the throwaway copy under $TMPDIR (as the verification task's own
    script suggested) silently breaks on this machine because its Docker
@@ -391,20 +389,48 @@ that decision belongs to the controller):
    under $HOME instead. This is a host/Colima fact, not a template bug, but
    is worth a note anywhere this repo tells someone to stage a throwaway copy
    under $TMPDIR on a Colima-based Docker setup.
-2. `scripts/setup.sh` calls `ddev drush recipe recipes/site_tools -y` and
+2. `scripts/setup.sh` called `ddev drush recipe recipes/site_tools -y` and
    `... recipes/dev_tools -y` with a path relative to the project root, but
    `ddev drush`'s actual PHP-level working directory is the docroot
    (web/), not the project root (`ddev exec pwd` returns /var/www/html;
    `ddev drush ev 'echo getcwd();'` returns /var/www/html/web). Both recipe
-   applications therefore always fail with "The supplied path
-   recipes/site_tools is not a directory" and setup.sh only warns and
-   continues. Proposed fix, verified live: change both calls to
-   `../recipes/site_tools` and `../recipes/dev_tools` (relative to the
-   docroot); both applied cleanly with that path (site_tools installed
-   admin_toolbar, twig_tweak, eca, eca_ui, bpmn_io, modeler_api; dev_tools
-   installed devel, environment_indicator, environment_indicator_toolbar).
-   Every fresh project built from this template today silently skips both
-   recipes unless someone notices the warning and applies them by hand.
+   applications therefore always failed with "The supplied path
+   recipes/site_tools is not a directory" and setup.sh only warned and
+   continued, so every fresh project built from this template silently skipped
+   both recipes unless someone noticed the warning and applied them by hand.
+   Fixed in commit 8f8a140: both calls now use `../recipes/site_tools` and
+   `../recipes/dev_tools` (relative to the docroot); both applied cleanly with
+   that path (site_tools installed admin_toolbar, twig_tweak, eca, eca_ui,
+   bpmn_io, modeler_api; dev_tools installed devel, environment_indicator,
+   environment_indicator_toolbar). A final-review pass re-checked the fix on
+   its own and found it correct with no new breakage. The `make recipe`
+   Makefile target had the identical defect (same docroot-relative-cwd cause)
+   and was fixed alongside it in the same review pass, changing its `ddev
+   drush recipe $(R)` call to `ddev drush recipe ../$(R)` while leaving the
+   documented `make recipe R=recipes/site_tools` usage unchanged.
+
+A final-review pass also found that the Twig debug confirmation above is
+narrower than it looks. `$twig->isDebug()` returning `true` was real, but it
+was confirmed only on the `localgov` flavour, and it works there because
+`drupal/localgov_project`'s own scaffolded `web/sites/development.services.yml`
+already sets `twig.config: { debug: true, ... }` by itself, independent of
+this feature. Both `drupal/core-recommended` (and, by extension, `drupal/cms`,
+which is core-based) and `drupal/localgov_project` scaffold their own
+`web/sites/development.services.yml` during `composer install`, well before
+setup.sh's later "Local development settings" section runs its
+`[ ! -f web/sites/development.services.yml ]` check, so that check almost
+always finds a file already in place and skips copying this feature's own
+`assets/development.services.yml`. Vanilla core's own scaffolded file has no
+`twig.config` override at all, so Twig debug is very likely NOT active on the
+`vanilla` and `cms` flavours; this was never live-tested (only `localgov`
+was). setup.sh now verifies this directly rather than trusting the
+created/already-present message: after the copy-if-absent step it greps
+whichever `web/sites/development.services.yml` ended up in place for
+`debug: true` and warns if it is not found. This feature's
+`assets/development.services.yml` and its copy-if-absent logic should be
+treated as a fallback for distributions that do not already ship their own
+file, not as a guarantee that Twig debug is on. Vanilla and cms still need a
+live check to confirm the actual behaviour.
 
 ## Start prompt
 

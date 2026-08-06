@@ -71,7 +71,7 @@ cr: ## Clear Drupal caches
 
 recipe: ## Apply a recipe (usage: make recipe R=recipes/site_tools)
 	@test -n "$(R)" || (echo "Usage: make recipe R=recipes/site_tools" && exit 1)
-	ddev drush recipe $(R)
+	ddev drush recipe ../$(R)
 
 ## == Theme ====================================================================
 

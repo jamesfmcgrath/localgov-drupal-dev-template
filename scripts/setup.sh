@@ -198,6 +198,11 @@ if [ ! -f "web/sites/development.services.yml" ]; then
 else
   success "web/sites/development.services.yml already present, not overwriting."
 fi
+if grep -q "debug: true" "web/sites/development.services.yml" 2>/dev/null; then
+  success "Twig debug confirmed active in web/sites/development.services.yml."
+else
+  warn "Twig debug not confirmed active in web/sites/development.services.yml (a different development.services.yml, likely from the installed Drupal distribution, may already be in place). Check web/sites/development.services.yml manually, or delete it and re-run setup.sh to install this template's version."
+fi
 
 SETTINGS_PHP="web/sites/default/settings.php"
 if [ -f "$SETTINGS_PHP" ]; then
