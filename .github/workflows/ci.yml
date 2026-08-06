@@ -220,21 +220,23 @@ jobs:
 
       - name: Create a node for the accessibility scan
         run: |
-          vendor/bin/drush php:eval '
+          node_id="$(vendor/bin/drush php:eval '
             $bundles = array_keys(\Drupal\node\Entity\NodeType::loadMultiple());
-            if (empty($bundles)) {
-              fwrite(STDERR, "No content types available; /node/1 will 404.\n");
-            }
-            else {
-              $node = \Drupal\node\Entity\Node::create([
-                "type" => reset($bundles),
-                "title" => "A11y CI test page",
-                "status" => 1,
-              ]);
-              $node->save();
-              echo "Created node " . $node->id() . " (" . reset($bundles) . ")\n";
-            }
-          '
+            if (empty($bundles)) { return; }
+            $node = \Drupal\node\Entity\Node::create([
+              "type" => reset($bundles),
+              "title" => "A11y CI test page",
+              "status" => 1,
+            ]);
+            $node->save();
+            echo $node->id();
+          ')"
+          if [ -n "$node_id" ]; then
+            echo "Created node $node_id"
+          else
+            echo "No content types available; the scan will skip a node page."
+          fi
+          echo "A11Y_NODE_ID=${node_id}" >> "$GITHUB_ENV"
 
       - name: Serve the site
         run: |
@@ -269,6 +271,27 @@ jobs:
             cat /tmp/drush-rs.log /tmp/php-s.log 2>/dev/null
             exit 1
           fi
+
+      - name: Build the accessibility URL list for the installed site
+        # Cater the scan to whatever profile or recipe was installed: always the
+        # front page, the node we just created (by its real id), and /search
+        # only when the installed site actually serves it. This avoids false
+        # load failures on flavours that do not use those paths, while still
+        # surfacing real accessibility violations on the pages that do exist.
+        run: |
+          urls='["/"'
+          if [ -n "${A11Y_NODE_ID}" ]; then
+            urls="${urls},\"/node/${A11Y_NODE_ID}\""
+          fi
+          code="$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8888/search || true)"
+          if [ "${code:-000}" -ge 200 ] && [ "${code:-000}" -lt 400 ]; then
+            urls="${urls},\"/search\""
+          else
+            echo "/search returned ${code:-000}; excluding it from the scan."
+          fi
+          urls="${urls}]"
+          printf '%s\n' "$urls" > a11y-urls.json
+          echo "Accessibility scan URLs: $urls"
 
       - uses: actions/setup-node@v5
         with:

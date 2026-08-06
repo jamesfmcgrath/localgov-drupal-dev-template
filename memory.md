@@ -52,8 +52,12 @@ staged improvement prompts and their status live in PROMPTS.md.
   allow-plugins allowlist). Also fixed: Makefile lint/stan/test/twig-lint now
   skip when web/modules/custom has no files (site-only projects), instead of
   hard-erroring. Site-only cms install boots and make check runs clean (targets
-  skip). Still pending: dev-tooling require completing on a cms project, make
-  check against a real module (module mode), and the a11y /search URL.
+  skip). a11y job now derives scan URLs at runtime (front page, created node by
+  real id, /search only if served), fixing the false /search and /node/1 404s on
+  cms. A real link-name WCAG violation in Drupal CMS's own front-page theme
+  remains and is left to fail, not suppressed (a cms site must give its branding
+  home link an accessible name). Still pending: dev-tooling require completing on
+  a cms project, and make check against a real module (module mode).
 - a11y CI job on real GitHub Actions infrastructure (only YAML-checked so far).
 - Site-only mode full DDEV/composer spin-up.
 - make lint-js / lint-css and the GitHub Actions eslint/stylelint steps

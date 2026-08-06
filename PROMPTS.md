@@ -33,9 +33,13 @@ touched.
   require needed an allow-plugins fix (phpstan/extension-installer, now
   pre-authorised in setup.sh), and the Makefile quality targets needed a
   site-only guard. The site-only cms install boots and make check runs clean
-  (targets skip). Still pending: the dev-tooling require completing on a cms
-  project, make check against a real module (module mode), and the a11y /search
-  URL. Prompt below.
+  (targets skip). The a11y job now derives its scan URLs at runtime to match the
+  installed site (front page, the created node by real id, /search only if
+  served), fixing the false /search and /node/1 404s on cms; a real link-name
+  WCAG violation in Drupal CMS's own front-page theme remains and is left to
+  fail rather than suppressed. Still pending: the dev-tooling require completing
+  on a cms project, and make check against a real module (module mode). Prompt
+  below.
 - Stage 6, template regression suite: DONE. scripts/test-template.sh, wired
   into CI as the "template" job (runs when the guard job's composer.json
   check is false).
