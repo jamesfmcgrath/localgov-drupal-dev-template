@@ -239,14 +239,14 @@ if [ "$SKIP_INSTALL" -eq 0 ]; then
 
   if [ "$NO_SITE_TOOLS" -eq 0 ]; then
     info "Applying recipes/site_tools..."
-    ddev drush recipe recipes/site_tools -y && success "recipes/site_tools applied." || warn "recipes/site_tools failed to apply."
+    ddev drush recipe ../recipes/site_tools -y && success "recipes/site_tools applied." || warn "recipes/site_tools failed to apply."
   else
     info "--no-site-tools set: skipping recipes/site_tools."
   fi
 
   if [ "$NO_DEV_TOOLS" -eq 0 ]; then
     info "Applying recipes/dev_tools..."
-    ddev drush recipe recipes/dev_tools -y && success "recipes/dev_tools applied." || warn "recipes/dev_tools failed to apply."
+    ddev drush recipe ../recipes/dev_tools -y && success "recipes/dev_tools applied." || warn "recipes/dev_tools failed to apply."
   else
     info "--no-dev-tools set: skipping recipes/dev_tools."
   fi
