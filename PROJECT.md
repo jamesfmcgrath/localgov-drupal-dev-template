@@ -305,9 +305,6 @@ drush's --answer ordering for the SDC generator was confirmed live
 library dependencies, CSS, JS, props, slots), so the target now pre-fills the
 first three instead of printing them for the user to type.
 
-Stage 11, local dev recipes: IN PROGRESS, see Task 11 of
-docs/superpowers/plans/2026-08-06-local-dev-recipes.md for live verification.
-
 Still not run live: core's generate-theme starterkit call on the vanilla and
 cms branches (the localgov branch is now proven).
 
@@ -344,6 +341,70 @@ explicitly while phpstan/extension-installer (pre-authorised by setup.sh since
 Stage 5) registers them too. Dropping the explicit includes block was tried and
 rejected: it breaks the parameters.drupal schema. Both belong to the same
 follow-up.
+
+Stage 11, local dev recipes: DONE (2026-08-06). Two new recipes
+(recipes/site_tools: admin_toolbar, twig_tweak, eca, eca_ui, bpmn_io;
+recipes/dev_tools: devel, environment_indicator,
+environment_indicator_toolbar; ctools required by composer but deliberately
+left out of both install lists, documented in site_tools' recipe.yml
+description), two new local-only templates (assets/settings.local.php with
+Twig debug on, render/page/dynamic_page_cache forced to NullBackend, and
+config_exclude_modules excluding devel and environment_indicator_toolbar from
+export; assets/development.services.yml), setup.sh wiring to copy both
+templates, enable the settings.local.php include, apply both recipes after
+install, and re-export config, and a `make recipe` target all landed and were
+proven end to end against a real throwaway localgov 11 project
+(module recipe_smoke) spun up from the template via ./scripts/init.sh and
+./scripts/setup.sh with Docker/DDEV on this machine. Composer resolved
+cleanly: drupal/eca to 3.1.4 and drupal/bpmn_io to 3.0.6, both on the version
+lines expected for a Drupal 11 install (^3.1 / ^3.0). Twig debug confirmed
+live (`$twig->isDebug()` returns `bool(true)`), and all three cache bins
+(render, page, dynamic_page_cache) confirmed as
+`Drupal\Core\Cache\NullBackend`. config_exclude_modules confirmed working by
+inspecting the actual exported sites/default/files/sync/core.extension.yml:
+admin_toolbar, admin_toolbar_tools, bpmn_io, eca, eca_ui,
+environment_indicator and twig_tweak are present; devel and
+environment_indicator_toolbar are correctly absent (note: `drush config:get
+core.extension module` alone is not a valid check here, since it reads active
+config, where devel and environment_indicator_toolbar are of course still
+enabled; only the exported sync file reflects the exclusion). The environment
+indicator itself renders correctly, but only for authenticated users on an
+admin-toolbar page; the front page of a fresh localgov install 302-redirects
+anonymous visitors to /user/login, and the toolbar markup
+(`toolbar-item-environment-indicator`, `environment-indicator-settings`, the
+configured "Local" name and #0b6623 colour) only appears once logged in, so
+verification needed drush uli plus a cookie-jar curl rather than a bare
+anonymous request to the front page.
+
+Two real bugs were found and worked around in the throwaway copy (neither
+fixed in this repo's scripts/setup.sh, per the task's own instruction that
+that decision belongs to the controller):
+
+1. Staging the throwaway copy under $TMPDIR (as the verification task's own
+   script suggested) silently breaks on this machine because its Docker
+   provider is Colima, which by default only mounts $HOME into its VM; a
+   project staged under /var/folders/... is invisible to the VM, so DDEV warns
+   "/mnt/ddev_config is not mounted" and the container's
+   web/sites/default/files ends up as a phantom root-owned directory the
+   unprivileged container user cannot write to, failing the site install
+   outright ("the directory ... is not writable"). Worked around by staging
+   under $HOME instead. This is a host/Colima fact, not a template bug, but
+   is worth a note anywhere this repo tells someone to stage a throwaway copy
+   under $TMPDIR on a Colima-based Docker setup.
+2. `scripts/setup.sh` calls `ddev drush recipe recipes/site_tools -y` and
+   `... recipes/dev_tools -y` with a path relative to the project root, but
+   `ddev drush`'s actual PHP-level working directory is the docroot
+   (web/), not the project root (`ddev exec pwd` returns /var/www/html;
+   `ddev drush ev 'echo getcwd();'` returns /var/www/html/web). Both recipe
+   applications therefore always fail with "The supplied path
+   recipes/site_tools is not a directory" and setup.sh only warns and
+   continues. Proposed fix, verified live: change both calls to
+   `../recipes/site_tools` and `../recipes/dev_tools` (relative to the
+   docroot); both applied cleanly with that path (site_tools installed
+   admin_toolbar, twig_tweak, eca, eca_ui, bpmn_io, modeler_api; dev_tools
+   installed devel, environment_indicator, environment_indicator_toolbar).
+   Every fresh project built from this template today silently skips both
+   recipes unless someone notices the warning and applies them by hand.
 
 ## Start prompt
 

@@ -89,8 +89,26 @@ touched.
   is blocked by the pre-existing make stan ddev-exec exit-code caveat and by
   subtheme vocabulary missing from .cspell-project-words.txt. See PROJECT.md
   for the measurements.
-- Stage 11, local dev recipes: IN PROGRESS, see Task 11 of
-  docs/superpowers/plans/2026-08-06-local-dev-recipes.md for live verification.
+- Stage 11, local dev recipes: DONE (2026-08-06). recipes/site_tools and
+  recipes/dev_tools, assets/settings.local.php and
+  assets/development.services.yml, setup.sh wiring, and make recipe all
+  verified live against a throwaway localgov 11 project (module recipe_smoke)
+  spun up with real Docker/DDEV: composer resolved drupal/eca to 3.1.4 and
+  drupal/bpmn_io to 3.0.6, Twig debug and all three null-backed cache bins
+  (render, page, dynamic_page_cache) confirmed, config_exclude_modules
+  confirmed against the actual exported core.extension.yml (devel and
+  environment_indicator_toolbar correctly absent from the export; both
+  correctly still enabled in active config), and the environment indicator
+  confirmed rendering for authenticated users. Two bugs found: staging the
+  throwaway copy under $TMPDIR breaks DDEV on this machine's Colima Docker
+  provider (only $HOME is mounted into its VM) and had to be re-staged under
+  $HOME; and setup.sh's `ddev drush recipe recipes/site_tools -y` /
+  `recipes/dev_tools -y` calls fail because ddev drush's cwd is the docroot,
+  not the project root, so both recipes silently fail to apply on every
+  project built from this template today (proposed fix, verified live:
+  `../recipes/site_tools` and `../recipes/dev_tools`). See PROJECT.md for
+  full detail; the setup.sh fix was not applied here, left for the
+  controller to action.
 
 ---
 
