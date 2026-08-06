@@ -3,7 +3,7 @@
 ## Usage: make <target>
 ##
 
-.PHONY: help start stop restart open logs si install enable cr \
+.PHONY: help start stop restart open logs si install enable cr recipe \
         test lint lint-fix stan check format format-check twig-lint twig-fix \
         spell lint-js lint-css module-ci subtheme component \
         mod-log mod-status mod-fetch mod-branch tag switch mr \
@@ -66,6 +66,12 @@ enable: guard-module-name ## Enable the module
 
 cr: ## Clear Drupal caches
 	ddev drush cr
+
+## == Recipes ==================================================================
+
+recipe: ## Apply a recipe (usage: make recipe R=recipes/site_tools)
+	@test -n "$(R)" || (echo "Usage: make recipe R=recipes/site_tools" && exit 1)
+	ddev drush recipe $(R)
 
 ## == Theme ====================================================================
 
