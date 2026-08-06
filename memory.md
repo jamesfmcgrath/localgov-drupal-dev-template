@@ -40,6 +40,15 @@ $(THEME_PATH) stays for subtheme and component.
 - Vanilla + Drupal 10: verified end to end (first run 2026-07-29, re-run
   2026-08-05 with no issues). Installs and boots on Drupal 10.6.14, front
   page 200, make check clean.
+- LocalGov + Drupal 11, theme-only project: verified end to end (2026-08-06).
+  setup.sh completed, make subtheme built the localgov_base subtheme through
+  ddev exec, the theme enabled and became the default, make component
+  NAME=test_card scaffolded components/test_card/ into it. phpcs, phpunit,
+  twig-fix, format, format-check all clean over web/themes/custom; make stan
+  blocked by the ddev-exec exit-code caveat, cspell red on ordinary subtheme
+  vocabulary. Note for future live runs on this machine: *.ddev.site does not
+  resolve via DNS here, so ddev start needs an /etc/hosts entry and therefore
+  sudo; reusing a hostname already present in /etc/hosts avoids that.
 
 ## Stage status (from PROMPTS.md)
 
@@ -53,12 +62,17 @@ $(THEME_PATH) stays for subtheme and component.
 - Stage 7 optional module / site-only mode: DONE.
 - Stage 8 drupal.org (GitLab CI) pipeline parity: DONE.
 - Stage 9 axe-core + Playwright a11y (replacing pa11y-ci): DONE, WCAG 2.2 AA.
-- Stage 10 custom code workspace (LINT_PATHS) + optional theme: DONE at the
-  tokeniser and tooling level (2026-08-06). New tokens THEME_NAME, THEME_LABEL,
-  THEME_PATH, DRUPAL_FLAVOUR, plus composed THEME_INTRO, THEME_LINE,
-  THEME_LAYER. New targets: subtheme, component. AGENTS.md gained an SDC
-  section. Regression suite passes 385/385 across all four module/theme
-  combinations. make subtheme still needs a live DDEV run.
+- Stage 10 custom code workspace (LINT_PATHS) + optional theme: DONE
+  (2026-08-06), audited against the full stage specification and verified
+  live. New tokens THEME_NAME, THEME_LABEL, THEME_PATH, DRUPAL_FLAVOUR, plus
+  composed THEME_INTRO, THEME_LINE, THEME_LAYER. New targets: subtheme,
+  component. AGENTS.md gained an SDC section. Regression suite passes 385/385
+  across all four module/theme combinations. make subtheme and make component
+  proven live on localgov 11. Two fixes closed in the audit: make component
+  pre-fills the SDC generator's first three answers (theme machine name,
+  component name, component machine name; ordering confirmed live), and make
+  spell gained --no-must-find-files to match CI and package.json. Not proven:
+  make subtheme on vanilla and cms (core's generate-theme starterkit call).
 
 ## Open items / needs live verification
 
@@ -78,16 +92,24 @@ $(THEME_PATH) stays for subtheme and component.
 - Site-only mode full DDEV/composer spin-up.
 - make lint-js / lint-css and the GitHub Actions eslint/stylelint steps
   against a live web/core frontend install.
-- `make stan` can report a spurious exit 1 with zero real errors
-  (ddev-exec/PHPStan interaction); not yet root-caused or fixed in the
-  Makefile.
-- make subtheme end to end on both branches. The localgov branch's piped
-  answers were verified directly against localgov_base 2.x's
-  create_subtheme.sh outside DDEV; the ddev exec wrapping and core's
-  generate-theme call were not run.
-- make component pre-filling the component name. drush's --answer ordering for
-  the SDC generator could not be verified from the published docs, so the
-  target runs the generator interactively and prints the answers to give.
+- `make stan` reports a spurious exit 1 with zero real errors. Narrowed
+  2026-08-06: phpstan's own exit code is 0 (measured inside the container),
+  but ddev exec reports 1 whenever phpstan's output streams back to the host,
+  and 0 when that output is redirected inside the container. --no-progress
+  does not help, and neither does a shell wrapper, so the earlier "works
+  through a shell wrapper" note was wrong. Related and unfixed: phpstan.neon
+  includes phpstan-drupal's neon files explicitly while
+  phpstan/extension-installer registers them too ("included multiple times");
+  removing the explicit includes breaks the parameters.drupal schema.
+  Stage 10 makes this reachable on theme projects, so it now blocks make check
+  there.
+- make subtheme on the vanilla and cms branches (core's generate-theme
+  starterkit call). The localgov branch is verified live as of 2026-08-06.
+- A freshly scaffolded localgov_base subtheme fails make spell on ordinary
+  subtheme vocabulary (favicons, msapplication, mstile, xlink, evenodd,
+  linecap, miterlimit, focusable, ckeditor, subtheme, colour/colours) plus
+  names in the shipped logo.svg metadata. A theme project needs those in
+  .cspell-project-words.txt; the template's dictionary is left untouched.
 
 ## Conventions (hard rules)
 

@@ -123,4 +123,7 @@ configured.
   --path themes/custom`.
 
 `make component NAME=x` wraps `drush generate single-directory-component` for
-adding a single directory component to the theme.
+adding a single directory component to the theme. It pre-fills the generator's
+first three answers (theme machine name, component name, component machine
+name) from `THEME_NAME` and `NAME`, so only the component shape questions
+(description, library dependencies, CSS, JS, props, slots) are left to answer.

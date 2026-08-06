@@ -83,7 +83,9 @@ it alongside this file when planning work.
   since 1.x bug fixes ended December 2025); on vanilla and cms it runs
   php web/core/scripts/drupal generate-theme <name> --name "<label>"
   --path themes/custom. make component NAME=x wraps
-  drush generate single-directory-component.
+  drush generate single-directory-component, pre-filling its first three
+  answers (theme machine name, component name, component machine name) via
+  --answer and leaving the component shape questions interactive.
 - CI: .github/workflows/ci.yml runs phpcs, phpstan, twig-cs-fixer (guarded to
   skip cleanly when the module has no .twig files), phpunit (unit+kernel,
   sqlite), a prettier check, and an a11y job. The a11y job installs the site
@@ -270,25 +272,55 @@ vanilla and cms) and component (drush generate single-directory-component).
 AGENTS.md gained an SDC section under Front-end Standards. The regression suite
 now covers all four module/theme combinations and passes 385/385.
 
-Needs live verification from this stage: make subtheme end to end (both
-branches) requires DDEV. The localgov branch's piped-answers approach was
-verified directly against localgov_base 2.x's create_subtheme.sh outside DDEV
-(it accepts the label and machine name on stdin and writes
-themes/custom/<name>), but the ddev exec wrapping was not run. Core's
-generate-theme invocation was taken from the drupal.org starterkit
-documentation, not run. make component runs the drush generator interactively
-and prints the theme and component name to answer, because drush's --answer
-ordering for the SDC generator could not be verified from the published docs;
-pre-filling it is a follow-up once that ordering is confirmed against a live
-drush.
+Live verification (2026-08-06, localgov 11, theme-only project): setup.sh
+completed, make subtheme created the localgov_base subtheme at
+web/themes/custom/<name> through ddev exec, and the theme enabled and became
+the default theme (drush theme:enable plus config:set system.theme default).
+The generator's prompt order was confirmed from localgov_base 2.x's
+create_subtheme.sh itself: full name first, then machine name, writing to
+../../custom/<name>, exactly what the Makefile pipes. make component
+NAME=test_card then scaffolded components/test_card/ inside the theme.
+drush's --answer ordering for the SDC generator was confirmed live
+(theme machine name, component name, component machine name, then description,
+library dependencies, CSS, JS, props, slots), so the target now pre-fills the
+first three instead of printing them for the user to type.
+
+Still not run live: core's generate-theme starterkit call on the vanilla and
+cms branches (the localgov branch is now proven).
+
+Found during that run, on a freshly scaffolded localgov_base subtheme:
+make lint (phpcs) and make test pass, make twig-fix and make format clean up
+what make twig-lint and make format-check flag in the generated templates, and
+cspell reports 21 issues that are ordinary subtheme vocabulary (favicons,
+msapplication, mstile, xlink, evenodd, linecap, miterlimit, focusable,
+ckeditor, subtheme, colour/colours) plus names from the shipped logo.svg
+metadata. A theme project therefore needs those words added to
+.cspell-project-words.txt before make check is green; that dictionary is
+deliberately left untouched here rather than pre-loaded with another project's
+vocabulary. make stan remains blocked by the pre-existing
+ddev-exec/PHPStan exit-code caveat below, which Stage 10 makes reachable on
+theme-only projects for the first time.
 
 Remaining open work: a handful of DDEV/composer/npm spin-ups remain marked
 "needs live verification": the cms flavour full spin-up, the a11y CI job on
 real GitHub Actions infrastructure, the site-only mode full spin-up, make
-subtheme on both branches, and make lint-js/lint-css plus the GitHub Actions
-eslint/stylelint steps against a live web/core frontend install. The
-`make stan` spurious-exit-1 caveat is not yet root-caused or fixed in the
-Makefile.
+subtheme on the vanilla and cms branches (the localgov branch is verified),
+and make lint-js/lint-css plus the GitHub Actions eslint/stylelint steps
+against a live web/core frontend install.
+
+The `make stan` spurious-exit-1 caveat is narrowed but not fixed (2026-08-06).
+Measured inside the container, phpstan writes its exit code as 0 to a file, so
+the analysis itself succeeds; `ddev exec vendor/bin/phpstan analyse <path>`
+still reports exit 1 to the host whenever phpstan's output streams back out of
+the container, and returns 0 only when that output is redirected inside the
+container. Adding --no-progress does not change it, and a shell wrapper does
+not either, so the earlier "works through a shell wrapper" note was too
+optimistic. The run also surfaces phpstan's "These files are included multiple
+times" warning, because phpstan.neon includes phpstan-drupal's neon files
+explicitly while phpstan/extension-installer (pre-authorised by setup.sh since
+Stage 5) registers them too. Dropping the explicit includes block was tried and
+rejected: it breaks the parameters.drupal schema. Both belong to the same
+follow-up.
 
 ## Start prompt
 

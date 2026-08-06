@@ -75,11 +75,20 @@ touched.
   DRUPAL_FLAVOUR and composed THEME_INTRO/THEME_LINE/THEME_LAYER), so all four
   module/theme combinations work. New Makefile targets subtheme and component;
   AGENTS.md gained an SDC section. Regression suite grew from 134 to 385
-  checks, all passing. Needs live verification: make subtheme end to end on
-  both branches (the localgov piped-answers path was proven against
-  localgov_base 2.x outside DDEV, the ddev exec wrapping and core's
-  generate-theme call were not run), and pre-filling make component's answers
-  once drush's --answer ordering for the SDC generator is confirmed.
+  checks, all passing.
+  Audited against the full stage specification and verified live on
+  2026-08-06: all ten specification items pass, 385/385 regression checks
+  pass, and a throwaway localgov 11 theme-only project ran setup.sh, make
+  subtheme (localgov_base subtheme created through ddev exec, theme enabled
+  and set as default), and make component NAME=test_card (SDC scaffolded into
+  the theme). Two changes closed during that audit: make component now
+  pre-fills the generator's first three answers, the --answer ordering having
+  been confirmed live, and make spell gained --no-must-find-files to match CI
+  and package.json. Still open: make subtheme on the vanilla and cms branches
+  (core's generate-theme call), and make check going green end to end, which
+  is blocked by the pre-existing make stan ddev-exec exit-code caveat and by
+  subtheme vocabulary missing from .cspell-project-words.txt. See PROJECT.md
+  for the measurements.
 
 ---
 

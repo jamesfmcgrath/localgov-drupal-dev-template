@@ -97,9 +97,12 @@ subtheme: guard-theme-name ## Scaffold the custom theme at $(THEME_PATH)
 
 component: guard-theme-name ## Scaffold a single directory component (usage: make component NAME=card)
 	@test -n "$(NAME)" || (echo "Usage: make component NAME=card" && exit 1)
-	@echo "Generating a single directory component."
-	@echo "Answer the prompts with theme '$(THEME_NAME)' and component machine name '$(NAME)'."
-	ddev drush generate single-directory-component
+	@echo "Generating component $(NAME) in $(THEME_NAME)."
+	@echo "The remaining prompts (description, libraries, CSS/JS, props, slots) are yours to answer."
+	@echo "Give every prop a type and a title; see the SDC section in AGENTS.md."
+	@label="$$(echo '$(NAME)' | tr '_' ' ' | awk '{for(i=1;i<=NF;i++)$$i=toupper(substr($$i,1,1))substr($$i,2)}1')"; \
+	ddev drush generate single-directory-component \
+	  --answer "$(THEME_NAME)" --answer "$$label" --answer "$(NAME)"
 
 ## == Quality ==================================================================
 
@@ -160,7 +163,7 @@ twig-fix: ## Auto-fix Twig template violations
 spell: ## Spell-check the custom code with cspell
 	@for p in $(LINT_PATHS); do \
 	  if find "$$p" -type f -print -quit 2>/dev/null | grep -q .; then \
-	    ddev exec npx cspell --no-progress "$$p/**" || exit $$?; \
+	    ddev exec npx cspell --no-progress --no-must-find-files "$$p/**" || exit $$?; \
 	  else \
 	    echo "No files found under $$p; skipping cspell."; \
 	  fi; \
