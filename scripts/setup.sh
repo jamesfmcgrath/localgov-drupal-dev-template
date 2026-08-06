@@ -4,6 +4,8 @@
 # Flags:
 #   --force-reviewer   re-fetch drupal-reviewer even if present
 #   --skip-install     scaffold + tooling only, do not install the Drupal site
+#   --no-site-tools    skip applying recipes/site_tools after install
+#   --no-dev-tools     skip applying recipes/dev_tools after install
 set -euo pipefail
 
 BOLD="\033[1m"; GREEN="\033[32m"; YELLOW="\033[33m"; RED="\033[31m"; RESET="\033[0m"
@@ -22,11 +24,13 @@ DRUPAL_TYPE="{{DRUPAL_TYPE}}"
 REVIEWER_REF="main"
 REVIEWER_URL="https://raw.githubusercontent.com/${SKILL_FORK}/drupal-agent-resources/${REVIEWER_REF}/.claude/agents/drupal-reviewer.md"
 
-FORCE_REVIEWER=0; SKIP_INSTALL=0
+FORCE_REVIEWER=0; SKIP_INSTALL=0; NO_SITE_TOOLS=0; NO_DEV_TOOLS=0
 for a in "$@"; do
   case "$a" in
     --force-reviewer) FORCE_REVIEWER=1 ;;
     --skip-install)   SKIP_INSTALL=1 ;;
+    --no-site-tools)  NO_SITE_TOOLS=1 ;;
+    --no-dev-tools)   NO_DEV_TOOLS=1 ;;
   esac
 done
 
@@ -231,6 +235,25 @@ if [ "$SKIP_INSTALL" -eq 0 ]; then
   if [ -n "${MODULE_NAME}" ] && [ -d "${MODULE_PATH}" ]; then
     info "Enabling ${MODULE_NAME}..."
     ddev drush en "${MODULE_NAME}" -y && ddev drush cr && success "${MODULE_NAME} enabled."
+  fi
+
+  if [ "$NO_SITE_TOOLS" -eq 0 ]; then
+    info "Applying recipes/site_tools..."
+    ddev drush recipe recipes/site_tools -y && success "recipes/site_tools applied." || warn "recipes/site_tools failed to apply."
+  else
+    info "--no-site-tools set: skipping recipes/site_tools."
+  fi
+
+  if [ "$NO_DEV_TOOLS" -eq 0 ]; then
+    info "Applying recipes/dev_tools..."
+    ddev drush recipe recipes/dev_tools -y && success "recipes/dev_tools applied." || warn "recipes/dev_tools failed to apply."
+  else
+    info "--no-dev-tools set: skipping recipes/dev_tools."
+  fi
+
+  if [ "$NO_SITE_TOOLS" -eq 0 ] || [ "$NO_DEV_TOOLS" -eq 0 ]; then
+    info "Re-exporting config after recipes..."
+    ddev drush cex -y && success "Config exported." || warn "Config export failed; run 'ddev drush cex -y' manually."
   fi
 else
   warn "--skip-install set: site not installed. Run ./scripts/install-drupal when ready."
