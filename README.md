@@ -105,10 +105,13 @@ A `Makefile` wraps the everyday tasks (run `make help` for the full list):
 ```bash
 make help          # List all targets
 make start         # Start DDEV (also stop / restart / open / logs)
+make xdebug-on     # Enable Xdebug (also xdebug-off)
 make install       # Clean install, choose a profile
 make si            # Fresh LocalGov install
 make enable        # Enable the module
 make cr            # Clear caches
+make snapshot      # Create a DDEV database/files snapshot (also restore)
+make import DB=path/to/dump.sql.gz   # Import a database dump
 make subtheme      # Scaffold the custom theme (LocalGov Base subtheme or core starterkit)
 make component NAME=promo_card   # Scaffold a single directory component
 make test          # PHPUnit (also lint / lint-fix / stan)
