@@ -1,7 +1,7 @@
 # Stage 13 summary: non-interactive init and dynamic token discovery
 
 Date: 2026-08-10
-Branch: `feat/stage-13-init-token` (not committed, not merged, not pushed)
+Branch: `feat/stage-13-init-token` (merged into `main` in PR #3)
 Base commit: `fd6273a`
 Files changed: `scripts/init.sh`, `scripts/test-template.sh`, `README.md`,
 `TEMPLATE.md`, `PROJECT.md`, `PROMPTS.md`, `.gitignore`
