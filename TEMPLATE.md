@@ -1,6 +1,6 @@
 # Template tokens
 
-`scripts/init.sh` substitutes these across the files listed. Run it once, from the repo root, immediately after creating a repo from this template. It removes itself when done.
+`scripts/init.sh` substitutes these across every file that holds one. Run it once, from the repo root, immediately after creating a repo from this template. Answer the prompts, pass the matching flags (`./scripts/init.sh --help`), or take every default with `--defaults`. It removes itself when done.
 
 | Token | Meaning | Default / example |
 |---|---|---|
@@ -20,7 +20,44 @@
 | `{{COMPOSER_PROJECT}}` | Composer project to scaffold (derived from flavour/version) | `drupal/localgov_project` |
 | `{{INSTALL_PROFILE}}` | Install profile (derived from flavour) | `localgov` |
 
+## The answers file
+
+Before substituting anything, `init.sh` writes the resolved answers to
+`template.answers` in the project root: one `KEY=value` line per answer, keys
+matching the flag names (`MODULE_NAME` for `--module`, `THEME_NAME` for
+`--theme`, and so on), followed by the four values derived from the flavour and
+version answers (`DRUPAL_TYPE`, `DRUPAL_FLAVOUR`, `COMPOSER_PROJECT`,
+`INSTALL_PROFILE`). It is a record of the run, not a shell script: values are
+unquoted, and nothing reads the file back.
+
+The file survives initialisation and should be committed, so a project can
+answer "what was this initialised with" from the repo rather than from memory,
+and so the same project can be recreated by turning those lines back into flags.
+
+## How the file list is found
+
+`init.sh` does not carry a list of files to substitute. It discovers them with
+`grep -rlE '\{\{[A-Z_]+\}\}'` from the repo root each run, so a file added to
+the template later is picked up with no change to the script. Excluded from that
+sweep: `.git/`, `node_modules/`, `vendor/` and `web/` (contrib and vendor code
+is never ours to rewrite), `docs/` and `template-docs/` (maintainer history that
+quotes tokens verbatim), the token-convention docs `PROJECT.md`, `PROMPTS.md`
+and `memory.md`, `template.answers` itself, and the two scripts that delete
+themselves at the end of the run (`scripts/init.sh`, which bash is still
+reading, and `scripts/test-template.sh`).
+
+Substitution writes back into the original file rather than moving a temp file
+over it, so executable bits survive. Values are escaped for `sed`, so a client
+name containing `&` lands intact.
+
+Only `{{UPPER_SNAKE}}` names are tokens. GitHub Actions `${{ ... }}` expressions
+put a space after the braces and are never matched or touched;
+`scripts/test-template.sh` asserts the count in `ci.yml` is unchanged.
+
 ## Where tokens appear
+
+The list below is a reader's map, not the substitution list (that is
+discovered):
 
 - `AGENTS.md`, project context (composed via `MODULE_INTRO`/`MODULE_LINE`/`THEME_INTRO`/`THEME_LINE` so it reads naturally in all four module/theme combinations), DDEV site, client (CLAUDE.md is only the @AGENTS.md import stub, no tokens)
 - `.claude/commands/a11y-check.md`, DDEV site URL, page-selection wording (`MODULE_AFFECTS`), theme fix-layer hint (`THEME_LAYER`)

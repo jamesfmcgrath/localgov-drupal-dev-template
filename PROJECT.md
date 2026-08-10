@@ -23,28 +23,55 @@ it alongside this file when planning work.
 - scripts/init.sh: one-time tokeniser. Prompts for module name/path, theme
   name/label, DDEV site, client, skill fork, and Drupal flavour
   (localgov|vanilla|cms) + version (11|10; the cms flavour forces Drupal 11).
-  Module and theme are independent optional prompts, so all four combinations
+  Every prompt has a matching flag (--module, --module-label, --module-path,
+  --module-repo, --theme, --theme-label, --ddev-name, --ddev-url, --client,
+  --skill-fork, --flavour, --version), plus --defaults (take every default,
+  blank module and theme) and --help. Anything not given as a flag is still
+  prompted, so flags and prompts mix; with --defaults or a full flag set the
+  run needs no tty. --flag=value is the explicit-empty form, so --module=""
+  selects site-only mode rather than falling back to the prompt. Flag values
+  are validated before the first prompt (machine names, non-empty values,
+  flavour, version); the prompts keep their historic permissive fallback.
+  Module and theme are independent optional answers, so all four combinations
   are supported: module only, theme only, both, neither. A blank module name
   skips the module label/path/repo prompts and makes MODULE_PATH
   web/modules/custom; a blank theme name skips the theme label prompt and makes
   THEME_PATH web/themes/custom. Eight composed tokens (MODULE_INTRO,
   MODULE_LINE, MODULE_AFFECTS, THEME_INTRO, THEME_LINE, THEME_LAYER,
   PACKAGE_NAME, PACKAGE_DESCRIPTION) keep AGENTS.md, a11y-check.md, and
-  package.json reading naturally in every combination. Substitutes {{TOKENS}}
-  across files, then removes itself, TEMPLATE.md, and scripts/test-template.sh.
-  Must preserve file executable bits (it writes back into files rather than
-  mv-ing a temp over them, and re-chmods the scripts).
+  package.json reading naturally in every combination. Writes the resolved
+  answers to template.answers (KEY=value lines, keys matching the flag names,
+  plus the four derived values) before substituting, and leaves that file in
+  place to be committed, so a run is auditable and reproducible. Substitutes
+  {{TOKENS}} across files, then removes itself, TEMPLATE.md, and
+  scripts/test-template.sh. Must preserve file executable bits (it writes back
+  into files rather than mv-ing a temp over them, and re-chmods the scripts).
+  The substitution file list is discovered per run with
+  grep -rlE for {{UPPER_SNAKE}}, not hand-maintained, so a new template file is
+  picked up automatically; excluded are .git, node_modules, vendor, web, docs,
+  template-docs, the token-convention docs (PROJECT.md, PROMPTS.md, memory.md),
+  template.answers, and the two self-deleting scripts (rewriting init.sh while
+  bash is still reading it would corrupt the run). Values are sed-escaped, so a
+  client name containing & survives.
 - scripts/test-template.sh: regression suite for the bare template. Copies the
   repo to a throwaway dir per supported flavour/version combo and per
-  module/theme combination, pipes scripted answers into init.sh (via an
-  init_input helper that emits the right prompt sequence for each combination),
-  and asserts the tokeniser and file invariants (no leftover {{TOKENS}}, GitHub
-  Actions ${{ }} expressions untouched, substituted values present, THEME_*
-  values landing in the Makefile/AGENTS.md/a11y-check.md, LINT_PATHS covering
-  both custom code paths in all five places, scripts still parse and stay
-  executable, JSON/YAML/XML still parse, make -n help/module-ci/subtheme/
-  component all parse). No network, composer, or DDEV; the live spin-up still
-  needs manual verification. Removes itself on init, same as TEMPLATE.md.
+  module/theme combination, runs init.sh with flags and stdin closed (so a run
+  that still reaches a prompt fails), and asserts the tokeniser and file
+  invariants (no leftover {{TOKENS}}, GitHub Actions ${{ }} expressions
+  untouched, substituted values present, each flag's value landing in the file
+  that carries it, template.answers written with the prompted and derived
+  values, THEME_* values landing in the Makefile/AGENTS.md/a11y-check.md,
+  LINT_PATHS covering both custom code paths in all five places, scripts still
+  parse and stay executable, JSON/YAML/XML still parse, make -n help/module-ci/
+  subtheme/component all parse). Exactly one combo (localgov 11, module +
+  theme) drives the interactive path instead, through the init_input helper
+  that emits the prompt sequence. One combo injects a scratch file containing a
+  {{CLIENT}} token into the copy before running init.sh and asserts it was
+  substituted, which is what keeps the file list honest now that it is
+  discovered rather than listed. The test client name contains an ampersand on
+  purpose, to hold the sed escaping in place. No network, composer, or DDEV;
+  the live spin-up still needs manual verification. Removes itself on init,
+  same as TEMPLATE.md.
 - scripts/setup.sh: one-command spin-up. Installs agr skills + drupal-reviewer,
   starts DDEV, scaffolds the Drupal project (composer create into a container
   temp dir then cp -n so template files are not clobbered), composer install,
@@ -188,7 +215,10 @@ THEME_NAME), and from flavour/version DRUPAL_TYPE, DRUPAL_FLAVOUR,
 COMPOSER_PROJECT, INSTALL_PROFILE. Composed prose tokens: MODULE_INTRO,
 MODULE_LINE, MODULE_AFFECTS, THEME_INTRO, THEME_LINE, THEME_LAYER,
 PACKAGE_NAME, PACKAGE_DESCRIPTION. Only {{UPPER_SNAKE}} names are tokens; GitHub
-Actions ${{ ... }} expressions must be left untouched.
+Actions ${{ ... }} expressions must be left untouched. Every prompted token has
+a flag of the same name (MODULE_NAME is --module, THEME_NAME is --theme, the
+rest match directly), and the resolved set, prompted and derived, is recorded in
+template.answers.
 
 ### Conventions
 
@@ -210,6 +240,11 @@ Actions ${{ ... }} expressions must be left untouched.
 ### Working rules for any change
 
 - Run scripts/test-template.sh before calling a template change done.
+- Smoke tests on a throwaway copy can drive init.sh with flags rather than
+  piped answers, for example
+  ./scripts/init.sh --defaults --module my_mod --flavour cms --version 11,
+  which also proves the run needs no tty. Keep at least one check on the
+  interactive prompt path.
 - The DDEV/composer/npm spin-up cannot be fully proven without Docker; if you
   cannot run it, say so and mark it "needs live verification" rather than
   claiming success.

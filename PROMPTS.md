@@ -145,6 +145,28 @@ touched.
   infrastructure (only YAML-checked so far), and the authoritative Linux
   baseline generation/commit, both needing a live GitHub Actions run.
 
+- Stage 13, non-interactive init and dynamic token discovery: DONE
+  (2026-08-10). init.sh gained a flag for every prompt (--module,
+  --module-label, --module-path, --module-repo, --theme, --theme-label,
+  --ddev-name, --ddev-url, --client, --skill-fork, --flavour, --version) plus
+  --defaults and --help; anything not given as a flag is still prompted, and
+  --flag=value is the explicit-empty form so --module="" selects site-only mode
+  without falling back to the prompt. Flag values are validated before the
+  first prompt. Resolved answers, prompted and derived, are written to
+  template.answers before substitution and left to be committed. The
+  hand-maintained FILES array is gone: the substitution list is discovered per
+  run with grep -rlE for {{UPPER_SNAKE}}, excluding .git, node_modules, vendor,
+  web, docs, template-docs, the token-convention docs, template.answers, and
+  the two self-deleting scripts. Substitution still writes back into the
+  original file (executable bits preserved) and now sed-escapes its values, so
+  a client name containing & survives. test-template.sh drives every combo
+  through flags with stdin closed, except one combo (localgov 11, module +
+  theme) that keeps the interactive init_input path covered, and one that
+  injects a new {{CLIENT}}-bearing file into the copy before init.sh to prove
+  discovery. Suite grew from 528 to 697 checks, all passing; the failure path
+  was proven by breaking the --client mapping on purpose (the --client
+  assertions and the discovery check fail, suite exits 1) and restoring it.
+
 ---
 
 ## Stage 5: Add a Drupal CMS flavour

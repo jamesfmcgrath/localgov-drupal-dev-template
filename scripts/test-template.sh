@@ -2,6 +2,8 @@
 # Regression suite for the bare template. Exercises scripts/init.sh across
 # every supported flavour/version combo, and across all four module/theme
 # combinations, in a throwaway copy, then asserts tokeniser + file invariants.
+# Combos drive init.sh through its flags with stdin closed, except one that
+# keeps the interactive prompt path covered via init_input.
 # No network, no composer, no DDEV: the live spin-up remains a manual
 # verification step (see PROJECT.md).
 set -uo pipefail
@@ -31,8 +33,21 @@ COMBOS=(
 )
 
 MODULE_NAME="regress_mod"
+MODULE_LABEL="Regress Mod"
+MODULE_PATH="web/modules/custom/regress_mod"
+MODULE_REPO="https://example.invalid/regress_mod.git"
 THEME_NAME="regress_theme"
 THEME_LABEL="Regress Theme"
+DDEV_NAME="regress-dev"
+DDEV_URL="https://regress-dev.ddev.site"
+# The ampersand is deliberate: real council names contain one, and & is special
+# in a sed replacement, so this also proves init.sh escapes its values.
+CLIENT="Regress & District Council"
+SKILL_FORK="regressowner"
+
+# The scratch file one combo injects before running init.sh, to prove the
+# substitution list is discovered rather than hand-maintained.
+INJECTED_FILE="scratch-token-check.md"
 
 # Files that document the {{UPPER_SNAKE}} token convention as literal text
 # (companion maintainer docs), not files init.sh substitutes into.
@@ -53,7 +68,8 @@ yaml_parse() {
 # Feed init.sh's prompts in order. A blank line accepts the offered default.
 # Prompt order: module name, [module label, module path, module git URL],
 # theme name, [theme label], DDEV name, DDEV URL, client, skill fork,
-# flavour, version.
+# flavour, version. Used by the one combo that covers the interactive path;
+# every other combo goes through init_flags below.
 init_input() { # init_input <module_name> <theme_name> <flavour> <version>
   local module="$1" theme="$2" flavour="$3" version="$4"
   printf '%s\n' "$module"
@@ -62,6 +78,29 @@ init_input() { # init_input <module_name> <theme_name> <flavour> <version>
   [ -n "$theme" ] && printf '\n'
   printf '\n\n\n\n'
   printf '%s\n%s\n' "$flavour" "$version"
+}
+
+# The non-interactive form: one flag per prompt, one line per argument so the
+# caller can read it back into an array. An empty module or theme is passed as
+# --module=/--theme= (the explicit-empty form), which must select site-only or
+# no-theme mode rather than falling back to the prompt.
+init_flags() { # init_flags <module_name> <theme_name> <flavour> <version>
+  local module="$1" theme="$2" flavour="$3" version="$4"
+  local args=()
+  if [ -n "$module" ]; then
+    args+=(--module "$module" --module-label "$MODULE_LABEL"
+           --module-path "$MODULE_PATH" --module-repo "$MODULE_REPO")
+  else
+    args+=(--module=)
+  fi
+  if [ -n "$theme" ]; then
+    args+=(--theme "$theme" --theme-label "$THEME_LABEL")
+  else
+    args+=(--theme=)
+  fi
+  args+=(--ddev-name "$DDEV_NAME" --ddev-url "$DDEV_URL" --client "$CLIENT"
+         --skill-fork "$SKILL_FORK" --flavour "$flavour" --version "$version")
+  printf '%s\n' "${args[@]}"
 }
 
 stage_copy() { # stage_copy <dest>
@@ -242,9 +281,58 @@ assert_common() { # assert_common <dir> <label>
   fi
 }
 
-run_combo() { # run_combo <flavour> <version> <drupal_type> <composer_project> <install_profile> <module_name> <theme_name> <label_suffix>
+assert_file_contains() { # assert_file_contains <file> <literal> <message>
+  if grep -qF "$2" "$1" 2>/dev/null; then pass "$3"; else fail "$3"; fi
+}
+
+# The answers file records what init.sh resolved, in every mode, prompted and
+# derived values alike.
+assert_answers() { # assert_answers <dir> <label> <module> <theme> <drupal_type> <composer_project> <install_profile>
+  local dir="$1" label="$2" module="$3" theme="$4" drupal_type="$5"
+  local composer_project="$6" install_profile="$7" expected
+  if [ -f "$dir/template.answers" ]; then
+    pass "$label: template.answers written and kept"
+  else
+    fail "$label: template.answers missing"
+    return
+  fi
+  for expected in "MODULE_NAME=$module" "THEME_NAME=$theme" \
+    "DRUPAL_TYPE=$drupal_type" "COMPOSER_PROJECT=$composer_project" \
+    "INSTALL_PROFILE=$install_profile"; do
+    if grep -qxF "$expected" "$dir/template.answers"; then
+      pass "$label: template.answers records $expected"
+    else
+      fail "$label: template.answers missing $expected"
+    fi
+  done
+}
+
+# Values only a flag-driven run supplies, so each flag mapping is exercised.
+# The interactive combo accepts every default and skips these.
+assert_flag_values() { # assert_flag_values <dir> <label> <module>
+  local dir="$1" label="$2" module="$3" expected
+  assert_file_contains "$dir/.ddev/config.yaml" "name: $DDEV_NAME" "$label: .ddev/config.yaml carries --ddev-name"
+  assert_file_contains "$dir/AGENTS.md" "$DDEV_URL" "$label: AGENTS.md carries --ddev-url"
+  assert_file_contains "$dir/AGENTS.md" "$CLIENT" "$label: AGENTS.md carries --client"
+  assert_file_contains "$dir/README.md" "$CLIENT" "$label: README.md carries --client"
+  assert_file_contains "$dir/agr.toml" "$SKILL_FORK/drupal-agent-resources" "$label: agr.toml carries --skill-fork"
+  if [ -n "$module" ]; then
+    assert_file_contains "$dir/Makefile" "MODULE = $MODULE_PATH" "$label: Makefile carries --module-path"
+    assert_file_contains "$dir/scripts/setup.sh" "MODULE_REPO=\"$MODULE_REPO\"" "$label: setup.sh carries --module-repo"
+  fi
+  for expected in "DDEV_NAME=$DDEV_NAME" "DDEV_URL=$DDEV_URL" "CLIENT=$CLIENT" \
+    "SKILL_FORK=$SKILL_FORK"; do
+    if grep -qxF "$expected" "$dir/template.answers" 2>/dev/null; then
+      pass "$label: template.answers records $expected"
+    else
+      fail "$label: template.answers missing $expected"
+    fi
+  done
+}
+
+run_combo() { # run_combo <flavour> <version> <drupal_type> <composer_project> <install_profile> <module_name> <theme_name> <label_suffix> [mode] [inject]
   local flavour="$1" version="$2" drupal_type="$3" composer_project="$4" install_profile="$5"
-  local module="$6" theme="$7" suffix="${8:-}"
+  local module="$6" theme="$7" suffix="${8:-}" mode="${9:-flags}" inject="${10:-}"
   local label="$flavour $version${suffix:+ ($suffix)}"
 
   echo ""
@@ -257,14 +345,43 @@ run_combo() { # run_combo <flavour> <version> <drupal_type> <composer_project> <
   local ci_before ci_after
   ci_before="$(grep -oF '${{' "$tmp_dir/.github/workflows/ci.yml" | wc -l | tr -d ' ')"
 
+  # A file that did not exist when the template was written must still be
+  # substituted: the file list is discovered, not hand-maintained.
+  if [ "$inject" = "1" ]; then
+    printf 'Injected before init.sh, for %s\n' '{{CLIENT}}' > "$tmp_dir/$INJECTED_FILE"
+  fi
+
   local init_log="$tmp_dir/.init-output.log"
-  if (cd "$tmp_dir" && init_input "$module" "$theme" "$flavour" "$version" | ./scripts/init.sh) >"$init_log" 2>&1; then
-    pass "$label: init.sh exits 0"
+  if [ "$mode" = "interactive" ]; then
+    if (cd "$tmp_dir" && init_input "$module" "$theme" "$flavour" "$version" | ./scripts/init.sh) >"$init_log" 2>&1; then
+      pass "$label: init.sh exits 0"
+    else
+      fail "$label: init.sh exited nonzero (see $init_log)"
+    fi
   else
-    fail "$label: init.sh exited nonzero (see $init_log)"
+    local flags=() arg
+    while IFS= read -r arg; do flags+=("$arg"); done < <(init_flags "$module" "$theme" "$flavour" "$version")
+    # stdin closed: a flag run that still reaches a prompt fails here.
+    if (cd "$tmp_dir" && ./scripts/init.sh "${flags[@]}" </dev/null) >"$init_log" 2>&1; then
+      pass "$label: init.sh exits 0 with no tty interaction"
+    else
+      fail "$label: init.sh exited nonzero (see $init_log)"
+    fi
   fi
 
   assert_common "$tmp_dir" "$label"
+  assert_answers "$tmp_dir" "$label" "$module" "$theme" "$drupal_type" "$composer_project" "$install_profile"
+  if [ "$mode" != "interactive" ]; then
+    assert_flag_values "$tmp_dir" "$label" "$module"
+  fi
+
+  if [ "$inject" = "1" ]; then
+    if grep -qF "$CLIENT" "$tmp_dir/$INJECTED_FILE" 2>/dev/null; then
+      pass "$label: newly added $INJECTED_FILE was discovered and substituted"
+    else
+      fail "$label: newly added $INJECTED_FILE was not substituted"
+    fi
+  fi
 
   # GitHub Actions ${{ ... }} expressions must survive untouched.
   ci_after="$(grep -oF '${{' "$tmp_dir/.github/workflows/ci.yml" | wc -l | tr -d ' ')"
@@ -325,8 +442,11 @@ done
 
 # All four module/theme combinations. Module only is covered above; these add
 # module plus theme, theme only, and neither.
-run_combo "localgov" "11" "drupal11" "drupal/localgov_project" "localgov" "$MODULE_NAME" "$THEME_NAME" "module + theme"
-run_combo "localgov" "11" "drupal11" "drupal/localgov_project" "localgov" "" "$THEME_NAME" "theme only"
+# One combo, and only one, drives init.sh through its prompts instead of its
+# flags, so the interactive path stays covered. It answers the most questions:
+# module name, label, path and repo, theme name and label, then the rest.
+run_combo "localgov" "11" "drupal11" "drupal/localgov_project" "localgov" "$MODULE_NAME" "$THEME_NAME" "module + theme, interactive" "interactive"
+run_combo "localgov" "11" "drupal11" "drupal/localgov_project" "localgov" "" "$THEME_NAME" "theme only" "flags" "1"
 run_combo "vanilla"  "11" "drupal11" "drupal/recommended-project:^11" "standard" "" "$THEME_NAME" "theme only"
 run_combo "cms"      "11" "drupal11" "drupal/cms" "recipes/drupal_cms_starter" "$MODULE_NAME" "$THEME_NAME" "module + theme"
 run_combo "localgov" "11" "drupal11" "drupal/localgov_project" "localgov" "" "" "site-only"
