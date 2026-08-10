@@ -71,8 +71,9 @@ $(THEME_PATH) stays for subtheme and component.
   proven live on localgov 11. Two fixes closed in the audit: make component
   pre-fills the SDC generator's first three answers (theme machine name,
   component name, component machine name; ordering confirmed live), and make
-  spell gained --no-must-find-files to match CI and package.json. Not proven:
-  make subtheme on vanilla and cms (core's generate-theme starterkit call).
+  spell gained --no-must-find-files to match CI and package.json. make
+  subtheme on vanilla proven live 2026-08-10 (see Cleanup batch below; cms
+  shares the same code path).
 
 ## Open items / needs live verification
 
@@ -92,24 +93,63 @@ $(THEME_PATH) stays for subtheme and component.
 - Site-only mode full DDEV/composer spin-up.
 - make lint-js / lint-css and the GitHub Actions eslint/stylelint steps
   against a live web/core frontend install.
-- `make stan` reports a spurious exit 1 with zero real errors. Narrowed
-  2026-08-06: phpstan's own exit code is 0 (measured inside the container),
-  but ddev exec reports 1 whenever phpstan's output streams back to the host,
-  and 0 when that output is redirected inside the container. --no-progress
-  does not help, and neither does a shell wrapper, so the earlier "works
-  through a shell wrapper" note was wrong. Related and unfixed: phpstan.neon
-  includes phpstan-drupal's neon files explicitly while
-  phpstan/extension-installer registers them too ("included multiple times");
-  removing the explicit includes breaks the parameters.drupal schema.
-  Stage 10 makes this reachable on theme projects, so it now blocks make check
-  there.
-- make subtheme on the vanilla and cms branches (core's generate-theme
-  starterkit call). The localgov branch is verified live as of 2026-08-06.
-- A freshly scaffolded localgov_base subtheme fails make spell on ordinary
-  subtheme vocabulary (favicons, msapplication, mstile, xlink, evenodd,
-  linecap, miterlimit, focusable, ckeditor, subtheme, colour/colours) plus
-  names in the shipped logo.svg metadata. A theme project needs those in
-  .cspell-project-words.txt; the template's dictionary is left untouched.
+- RESOLVED (2026-08-10): `make stan` spurious exit 1. Real cause was
+  `phpstan.neon`'s explicit `includes:` block duplicating what
+  `phpstan/extension-installer` already auto-registers (confirmed by reading
+  its generated config), plus an independent stale `drupal: drupalRoot: web`
+  key (current key is `drupal_root`, and it's auto-discovered/deprecated
+  anyway). Removing both from `phpstan.neon` fixed it; the `stan` Makefile
+  target itself needed no change. Verified deterministic (pass and induced-
+  failure) on a throwaway project, then live end to end on a fresh LocalGov
+  11 theme-only project: `make subtheme` then `make check` runs lint, stan,
+  test, twig-lint (after the usual `make twig-fix` first) all clean.
+- RESOLVED (2026-08-10): make subtheme on vanilla. Live-verified; found and
+  fixed a real bug in the process: Drupal 11.4+ deprecated
+  `web/core/scripts/drupal` in favour of `vendor/bin/dr`, and the deprecated
+  shim's autoload fallback is broken outside the composer bin-proxy (exit
+  255). The Makefile now prefers `vendor/bin/dr generate-theme` when present,
+  falling back to the legacy script for Drupal 10 projects that predate `dr`.
+  cms was not spun up separately since it shares this code path; vanilla
+  proves it. `make component` also confirmed working against the resulting
+  starterkit theme.
+- RESOLVED (2026-08-10): `make subtheme` now appends generic subtheme
+  vocabulary (favicons, msapplication, mstile, xlink, evenodd, linecap,
+  miterlimit, focusable, ckeditor, subtheme, colour/colours) to
+  `.cspell-project-words.txt` after scaffolding; live-verified all 12 words
+  clear `make spell`. Residual, by design: `make spell` still flags genuine
+  proper nouns baked into localgov_base's own shipped assets outside
+  logo.svg (a tool credit in `favicons/safari-pinned-tab.svg`; a contributor
+  name in the theme's `package.json`), left for the theme owner, not added
+  to the dictionary, same reasoning as logo.svg. `make check` on a fresh
+  theme-only project is therefore clean except `spell`, deliberately.
+
+## Cleanup batch (2026-08-10)
+
+- CI: `.github/workflows/ci.yml` gained a top-level `concurrency` block
+  (group `${{ github.workflow }}-${{ github.ref }}`, cancel-in-progress) so
+  same-repo PR push+pull_request events stop doubling jobs; push stays
+  untouched (still runs on every branch), the superseded run is cancelled
+  instead. Expression count in the file is now 5 (was 3), both new ones
+  inside the concurrency block.
+- scripts/install-drupal: removed the dead `sleep 3` before the config
+  commit (drush cex is synchronous), gave the commit a descriptive message
+  ("Export site config after <profile> install"), added `--no-commit` to
+  skip the git add/commit while keeping the export.
+- Makefile: new targets `snapshot`, `restore`, `import DB=path`,
+  `xdebug-on`/`xdebug-off` (explicit on/off rather than a toggle, to avoid
+  parsing `ddev xdebug status` text). README's command table updated.
+- `make subtheme` now appends a curated, deduplicated, marker-guarded block
+  of generic subtheme vocabulary to `.cspell-project-words.txt` after
+  scaffolding, so `make spell` passes on a fresh subtheme without hand
+  editing the dictionary. logo.svg proper-noun metadata is left to the
+  subtheme owner; the target prints a note instead of adding names to the
+  dictionary.
+- scan-urls.json: confirmed (via code reading of a11y-scan.mjs and
+  tests/vrt/vrt.spec.mjs, not a fresh live run) that the shipped `["/"]`
+  default resolves on every flavour because both scripts follow redirects
+  before checking status; no default-path change needed.
+- PHP: left at 8.3 in .ddev/config.yaml. Bumping to 8.4 needs a live check
+  that LocalGov 4.x contrib resolves and runs cleanly on 8.4 first.
 
 ## Conventions (hard rules)
 

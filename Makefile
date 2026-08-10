@@ -3,7 +3,8 @@
 ## Usage: make <target>
 ##
 
-.PHONY: help start stop restart open logs si install enable cr recipe \
+.PHONY: help start stop restart open logs xdebug-on xdebug-off si install enable cr recipe \
+        snapshot restore import \
         test lint lint-fix stan check format format-check twig-lint twig-fix \
         spell lint-js lint-css vrt vrt-update module-ci subtheme component \
         mod-log mod-status mod-fetch mod-branch tag switch mr \
@@ -45,6 +46,12 @@ open: ## Open site in browser
 logs: ## Tail web server logs
 	ddev logs -f
 
+xdebug-on: ## Enable Xdebug
+	ddev xdebug on
+
+xdebug-off: ## Disable Xdebug
+	ddev xdebug off
+
 ## == Drupal ===================================================================
 
 si: ## Fresh Drupal install (LocalGov profile)
@@ -73,6 +80,18 @@ recipe: ## Apply a recipe (usage: make recipe R=recipes/site_tools)
 	@test -n "$(R)" || (echo "Usage: make recipe R=recipes/site_tools" && exit 1)
 	ddev drush recipe ../$(R)
 
+## == Data =====================================================================
+
+snapshot: ## Create a DDEV database/files snapshot
+	ddev snapshot
+
+restore: ## Restore the most recent DDEV snapshot
+	ddev snapshot restore --latest
+
+import: ## Import a database dump (usage: make import DB=path/to/dump.sql.gz)
+	@test -n "$(DB)" || (echo "Usage: make import DB=path/to/dump.sql.gz" && exit 1)
+	ddev import-db --file=$(DB)
+
 ## == Theme ====================================================================
 
 guard-theme-name:
@@ -95,11 +114,30 @@ subtheme: guard-theme-name ## Scaffold the custom theme at $(THEME_PATH)
 	  exit 1; \
 	else \
 	  echo "Generating a starterkit theme: $(THEME_LABEL) ($(THEME_NAME))"; \
-	  ddev exec php web/core/scripts/drupal generate-theme $(THEME_NAME) --name "$(THEME_LABEL)" --path themes/custom; \
+	  if ddev exec test -x vendor/bin/dr; then \
+	    ddev exec vendor/bin/dr generate-theme $(THEME_NAME) --name "$(THEME_LABEL)" --path themes/custom; \
+	  else \
+	    ddev exec php web/core/scripts/drupal generate-theme $(THEME_NAME) --name "$(THEME_LABEL)" --path themes/custom; \
+	  fi; \
+	fi
+	@marker="# Generic subtheme vocabulary (added by make subtheme)"; \
+	if ! grep -qF "$$marker" .cspell-project-words.txt 2>/dev/null; then \
+	  { \
+	    echo ""; \
+	    echo "$$marker"; \
+	    for w in favicons msapplication mstile xlink evenodd linecap miterlimit focusable ckeditor subtheme colour colours; do \
+	      grep -qxF "$$w" .cspell-project-words.txt 2>/dev/null || echo "$$w"; \
+	    done; \
+	  } >> .cspell-project-words.txt; \
+	  echo "Added generic subtheme vocabulary to .cspell-project-words.txt so make spell passes on scaffolded theme output."; \
 	fi
 	@echo ""
 	@echo "Next: ddev drush theme:enable $(THEME_NAME) -y"
 	@echo "      ddev drush config:set system.theme default $(THEME_NAME) -y"
+	@echo ""
+	@echo "Note: shipped assets (logo.svg, favicon SVGs, package.json contributors) can"
+	@echo "      carry proper-noun metadata (author/tool names). That is yours to keep"
+	@echo "      or strip; make spell does not add proper nouns to the dictionary for you."
 
 component: guard-theme-name ## Scaffold a single directory component (usage: make component NAME=card)
 	@test -n "$(NAME)" || (echo "Usage: make component NAME=card" && exit 1)

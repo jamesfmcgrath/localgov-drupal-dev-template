@@ -374,6 +374,107 @@ first three instead of printing them for the user to type.
 Still not run live: core's generate-theme starterkit call on the vanilla and
 cms branches (the localgov branch is now proven).
 
+Cleanup batch (2026-08-10), `make stan` spurious exit 1: RESOLVED. Root cause
+was not primarily a ddev-exec output-streaming artifact as previously
+narrowed; `phpstan.neon`'s explicit `includes:` block
+(`vendor/mglaman/phpstan-drupal/extension.neon` and `rules.neon`,
+`vendor/phpstan/phpstan-deprecation-rules/rules.neon`) duplicated exactly
+what `phpstan/extension-installer` (pre-authorised since Stage 5) already
+auto-registers, confirmed by reading
+`vendor/phpstan/extension-installer/src/GeneratedConfig.php` directly. That
+duplication, not streaming, produced the flaky host-side exit code. A second,
+independent bug sat underneath it: the `drupal: drupalRoot: web` parameter
+used a stale camelCase key; current `mglaman/phpstan-drupal` expects
+`drupal_root` and auto-discovers it regardless (the key is deprecated
+outright), so it was dropped rather than renamed. `phpstan.neon` now carries
+only `parameters.level` and `parameters.paths`. With both fixes,
+`ddev exec vendor/bin/phpstan analyse <path>` and `make stan` itself were
+each run repeatedly and deterministically: exit 0 on a clean analysis, exit 1
+with the real error shown when a genuine error was introduced, no wrapper or
+capture-and-replay needed. The `stan` Makefile target itself is unchanged.
+Live-verified twice: once on a throwaway vanilla 11 module+theme project
+(2026-08-10), and again end to end on a fresh LocalGov 11 theme-only project
+built the same way the original Stage 10 blocker was found (2026-08-10):
+`make subtheme` then `make check` now runs lint (skips, no module), stan
+(No errors), test (skips, no module), twig-lint (clean after `make
+twig-fix`, matching the existing documented flow) all the way through
+cleanly. `make spell` still fails on that project, but only on genuine
+proper nouns baked into localgov_base's own shipped scaffold assets outside
+logo.svg (`potrace`, `Selinger` from a tool credit inside
+`favicons/safari-pinned-tab.svg`; `Conroy`, a contributor name in the
+theme's `package.json`), the same category as the logo.svg caveat below,
+deliberately left for the theme owner rather than added to the dictionary.
+`make check` does not go fully green out of the box for that reason, by
+design, not because of a defect in this fix.
+
+Cleanup batch (2026-08-10), `make subtheme` on vanilla: RESOLVED, and a real
+bug found and fixed in the process. Live-verified on a throwaway vanilla 11
+project. The Makefile's non-localgov branch called
+`php web/core/scripts/drupal generate-theme ...`, but current
+`drupal/core-recommended` (Drupal 11.4+) deprecated that script in favour of
+`vendor/bin/dr`, and the deprecated shim's autoload fallback breaks when
+invoked directly outside the composer bin-proxy under the standard
+`web`-as-docroot layout (it resolves to a nonexistent
+`web/vendor/autoload.php`), failing with exit 255. Fixed by preferring
+`vendor/bin/dr generate-theme ...` when present and falling back to the
+legacy `web/core/scripts/drupal` invocation otherwise, so Drupal 10 projects
+(which predate `dr`) keep working unchanged. `generate-theme` itself is
+non-interactive (no prompts either way), confirming the Makefile's existing
+assumption. The generated starterkit theme enabled correctly
+(`drush theme:enable` + `config:set system.theme default`, front page 200),
+and `make component NAME=test_card` worked against it with the same
+pre-filled answers as the localgov_base path. cms was not spun up separately
+since it shares this same Makefile branch; vanilla proves the code path.
+
+Cleanup batch (2026-08-10): `.github/workflows/ci.yml` gained a top-level
+`concurrency` block (`group: ${{ github.workflow }}-${{ github.ref }}`,
+`cancel-in-progress: true`) so a same-repo pull request's push and
+pull_request events stop doubling every job; push stays untouched (not
+restricted to the default branch), so a branch with no open PR still gets a
+CI run, and the superseded duplicate is cancelled instead. GitHub Actions
+expression count in ci.yml is now 5 (was 3), the two new ones both inside the
+concurrency block; scripts/test-template.sh's own before/after check is
+unaffected since it compares the count across an init.sh run, not against a
+fixed number.
+
+scripts/install-drupal: the `sleep 3` before the config commit is gone
+(`drush cex` is synchronous, so the sleep was dead weight); the commit
+message is now descriptive ("Export site config after <profile> install");
+and a `--no-commit` flag skips the git add/commit while the config export
+still runs. Default behaviour (arg or interactive profile selection, then
+commit) is unchanged.
+
+Makefile: new targets `snapshot` (ddev snapshot), `restore` (ddev snapshot
+restore --latest), `import DB=path` (ddev import-db --file=$(DB), usage
+message when DB is empty), and `xdebug-on` / `xdebug-off` (two explicit
+targets rather than one toggle, since a toggle would need to parse `ddev
+xdebug status` text output to decide which way to flip, which is more
+fragile than two direct commands). README's Common commands table lists all
+five.
+
+`make subtheme` now appends a curated, deduplicated block of generic
+subtheme vocabulary (favicons, msapplication, mstile, xlink, evenodd,
+linecap, miterlimit, focusable, ckeditor, subtheme, colour, colours) to
+`.cspell-project-words.txt` after scaffolding, behind a comment marker so
+re-running `make subtheme` (after removing and re-scaffolding a theme) does
+not duplicate the block. The template's own dictionary stays untouched;
+only a project that actually scaffolds a theme gets the extra words. Shipped
+`logo.svg` proper-noun metadata (author/tool names in the SVG) is left for
+the subtheme owner to keep or strip; `make subtheme` prints a note to that
+effect rather than adding names to the dictionary.
+
+scan-urls.json: re-checked against a11y-scan.mjs and tests/vrt/vrt.spec.mjs.
+Both use `page.goto(..., { waitUntil: 'load' })` and read the final
+(post-redirect) response status, so the shipped `["/"]` default resolves
+(200) on every flavour even where "/" 302-redirects anonymously (LocalGov,
+see the Visual regression section of README.md), because Playwright follows
+the redirect before checking status. No default-path change was needed; this
+was a documentation/code-reading check, not a fresh live run.
+
+PHP version: left at 8.3 in .ddev/config.yaml for this batch. Bumping to 8.4
+needs a live check that LocalGov 4.x's contrib dependency tree resolves and
+runs cleanly on 8.4 first; not attempted here.
+
 Found during that run, on a freshly scaffolded localgov_base subtheme:
 make lint (phpcs) and make test pass, make twig-fix and make format clean up
 what make twig-lint and make format-check flag in the generated templates, and
