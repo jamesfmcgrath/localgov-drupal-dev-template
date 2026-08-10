@@ -215,8 +215,11 @@ jobs:
   # unproven. If it turns out too slow or flaky here, switch INSTALL_PROFILE
   # to "minimal" for this job only (minimal has no content types by default,
   # so the node-creation step below would need a bundle created first).
-  a11y:
-    name: Accessibility (axe-core)
+  # The VRT step below also needs live verification for the "generate and
+  # upload, do not fail" first-run path and the genuine-diff failure path;
+  # only exercised locally against a manually spun-up site so far.
+  browser:
+    name: Browser checks (accessibility + visual regression)
     needs: guard
     if: needs.guard.outputs.run == 'true'
     runs-on: ubuntu-latest
@@ -302,12 +305,14 @@ jobs:
             exit 1
           fi
 
-      - name: Build the accessibility URL list for the installed site
-        # Cater the scan to whatever profile or recipe was installed: always the
-        # front page, the node we just created (by its real id), and /search
-        # only when the installed site actually serves it. This avoids false
-        # load failures on flavours that do not use those paths, while still
-        # surfacing real accessibility violations on the pages that do exist.
+      - name: Build the shared scan URL list for the installed site
+        # Cater both the accessibility and visual regression scans to whatever
+        # profile or recipe was installed: always the front page, the node we
+        # just created (by its real id), and /search only when the installed
+        # site actually serves it. This avoids false load failures on
+        # flavours that do not use those paths, while still surfacing real
+        # accessibility violations and visual diffs on the pages that do
+        # exist.
         run: |
           urls='["/"'
           if [ -n "${A11Y_NODE_ID}" ]; then
@@ -320,8 +325,8 @@ jobs:
             echo "/search returned ${code:-000}; excluding it from the scan."
           fi
           urls="${urls}]"
-          printf '%s\n' "$urls" > a11y-urls.json
-          echo "Accessibility scan URLs: $urls"
+          printf '%s\n' "$urls" > scan-urls.json
+          echo "Scan URLs: $urls"
 
       - uses: actions/setup-node@v5
         with:
@@ -334,6 +339,34 @@ jobs:
 
       - name: Accessibility scan (axe-core via Playwright)
         run: node scripts/a11y-scan.mjs
+
+      - name: Visual regression test (Playwright)
+        id: vrt
+        run: |
+          if [ -d tests/vrt/__screenshots__/linux ] && find tests/vrt/__screenshots__/linux -name '*.png' -print -quit | grep -q .; then
+            echo "Committed Linux baselines found; comparing against them."
+            npx playwright test tests/vrt
+          else
+            echo "No committed Linux baselines yet; generating them instead of failing this run."
+            npx playwright test tests/vrt --update-snapshots
+            echo "baselines_generated=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload generated VRT baselines
+        if: steps.vrt.outputs.baselines_generated == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: vrt-baselines-linux
+          path: tests/vrt/__screenshots__/linux/
+          if-no-files-found: error
+
+      - name: Upload VRT diff report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vrt-report
+          path: playwright-report/
+          if-no-files-found: ignore
 
       - name: Show server logs
         if: failure()

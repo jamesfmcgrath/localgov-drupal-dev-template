@@ -181,16 +181,34 @@ assert_common() { # assert_common <dir> <label>
     fail "$label: assets/module.gitlab-ci.yml changed or missing after init.sh"
   fi
 
-  # recipes/ and the local dev settings templates hold no {{TOKENS}} either,
-  # so they must survive init.sh verbatim too.
+  # recipes/, the local dev settings templates, and the VRT/scan-urls files
+  # hold no {{TOKENS}} either, so they must survive init.sh verbatim too.
   for f in recipes/dev_tools/recipe.yml recipes/site_tools/recipe.yml \
-    assets/settings.local.php assets/development.services.yml; do
+    assets/settings.local.php assets/development.services.yml \
+    scan-urls.json playwright.config.mjs tests/vrt/vrt.spec.mjs; do
     if diff -q "$REPO_ROOT/$f" "$dir/$f" >/dev/null 2>&1; then
       pass "$label: $f survives init.sh verbatim"
     else
       fail "$label: $f changed or missing after init.sh"
     fi
   done
+
+  if python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$dir/scan-urls.json" 2>/dev/null; then
+    pass "$label: scan-urls.json is valid JSON"
+  else
+    fail "$label: scan-urls.json is not valid JSON"
+  fi
+
+  if (cd "$dir" && make -n vrt) >/dev/null 2>&1; then
+    pass "$label: make -n vrt parses"
+  else
+    fail "$label: make -n vrt failed"
+  fi
+  if (cd "$dir" && make -n vrt-update) >/dev/null 2>&1; then
+    pass "$label: make -n vrt-update parses"
+  else
+    fail "$label: make -n vrt-update failed"
+  fi
 
   if yaml_parse "$dir/recipes/dev_tools/recipe.yml"; then
     pass "$label: recipes/dev_tools/recipe.yml is valid YAML"

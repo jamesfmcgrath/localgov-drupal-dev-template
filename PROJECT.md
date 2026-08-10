@@ -108,19 +108,50 @@ it alongside this file when planning work.
   recipe independently in setup.sh.
 - CI: .github/workflows/ci.yml runs phpcs, phpstan, twig-cs-fixer (guarded to
   skip cleanly when the module has no .twig files), phpunit (unit+kernel,
-  sqlite), a prettier check, and an a11y job. The a11y job installs the site
-  with drush si and sqlite, serves it with drush rs (falling back to php -S if
-  that misbehaves), creates a node via drush, then runs scripts/a11y-scan.mjs
-  (axe-core via Playwright, WCAG 2.2 AA) against a URL list built at runtime to
-  match the installed site: always the front page, the node it just created
-  addressed by its real id, and /search only when the site actually serves it
-  (written to a11y-urls.json before the scan). This caters to each flavour and
-  recipe instead of assuming /search and /node/1 exist, without suppressing any
-  real violation on the pages that do load. A guard
-  job checks whether composer.json is present: created projects skip straight
-  to the jobs above; the bare template runs a "template" job instead
-  (scripts/test-template.sh), so the template repo gets a real, green CI run
-  instead of one that skips everything.
+  sqlite), a prettier check, and a "browser checks" job. That job installs the
+  site with drush si and sqlite, serves it with drush rs (falling back to php
+  -S if that misbehaves), creates a node via drush, then runs two Playwright
+  passes against the served site: scripts/a11y-scan.mjs (axe-core, WCAG 2.2
+  AA), then tests/vrt/vrt.spec.mjs (visual regression, see below). Both read
+  the same shared URL list, scan-urls.json, which the job rebuilds at runtime
+  to match the installed site: always the front page, the node it just
+  created addressed by its real id, and /search only when the site actually
+  serves it. This caters to each flavour and recipe instead of assuming
+  /search and /node/1 exist, without suppressing any real violation or visual
+  diff on the pages that do load. The file shipped at the template root
+  (scan-urls.json) ships with just `["/"]`, the only path guaranteed to
+  resolve on every flavour (localgov, vanilla standard, and cms) straight
+  after install with no content or extra module; add real paths (a node once
+  one exists, a search route once one is enabled, your own listing/detail
+  pages) as a project grows. A guard job checks whether composer.json is
+  present: created projects skip straight to the jobs above; the bare
+  template runs a "template" job instead (scripts/test-template.sh), so the
+  template repo gets a real, green CI run instead of one that skips
+  everything.
+- Visual regression testing (VRT): tests/vrt/vrt.spec.mjs reuses the
+  @playwright/test stack the accessibility job already installs rather than
+  adding a second browser-automation dependency (BackstopJS). It reads
+  scan-urls.json and asserts `expect(page).toHaveScreenshot()` per path
+  (fullPage, animations disabled, maxDiffPixelRatio 0.01), scoped by its own
+  playwright.config.mjs (testDir: tests/vrt) so a bare `npx playwright test`
+  does not pick up anything else. Baselines are OS-suffixed by Playwright's
+  own snapshot naming (tests/vrt/__screenshots__/<platform>/...); only the
+  linux/ ones are authoritative and committed, since font rendering differs
+  enough between macOS and Linux to make cross-OS baselines flaky by
+  construction. The darwin/ (macOS) directory is gitignored, so a local run
+  on a Mac is advisory only, not something to commit; generate and compare
+  authoritative baselines inside CI or a Linux container. `make vrt` runs the
+  comparison, `make vrt-update` regenerates baselines (both carry the same
+  Linux-only-authoritative note). In CI, the browser checks job treats a
+  missing linux/ baseline as "generate it and upload as a build artifact",
+  not a failure, so a brand-new project's first run does not fail on the
+  absence of history; once that artifact's contents are committed, later
+  diffs fail the job and the HTML diff report uploads as an artifact.
+  BackstopJS (including the official ddev/ddev-backstopjs add-on) remains a
+  documented, supported alternative for teams that specifically want its
+  standalone HTML report UI; this template does not run two browser-test
+  stacks side by side, since @playwright/test already covers the same ground
+  with the install already in place for accessibility testing.
 - drupal.org pipeline parity: assets/module.gitlab-ci.yml ships the canonical
   gitlab_templates include block (three files: main, variables, workflows)
   plus a documented variables block. `make module-ci` copies it to
