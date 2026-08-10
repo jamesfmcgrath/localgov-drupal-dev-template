@@ -43,6 +43,30 @@ A starting point for working locally on a Drupal 10/11 module, theme, or site, w
    ```
 
    It asks for the module name (leave blank to skip the module, which also skips the module label/path/repo prompts) and path, the theme name (leave blank for no custom theme, which also skips the theme label prompt), DDEV site, client, skill fork, and the Drupal flavour (`localgov`, `vanilla`, or `cms`) and version (`11` or `10`; Drupal CMS is Drupal 11 only). Module and theme are independent, so module only, theme only, both, and neither are all valid. It tokenises every file, then removes itself.
+
+   Every prompt also has a flag, so the same run works unattended (in a script, a container, or CI):
+
+   ```bash
+   ./scripts/init.sh \
+     --module localgov_bus_data --module-label "LocalGov Bus Data" \
+     --module-path web/modules/custom/localgov_bus_data \
+     --module-repo git@git.drupal.org:project/localgov_bus_data.git \
+     --theme cumberland_theme --theme-label "Cumberland Theme" \
+     --ddev-name lgd-bus-data-dev --ddev-url https://lgd-bus-data-dev.ddev.site \
+     --client "Cumberland Council bus timetables" --skill-fork jamesfmcgrath \
+     --flavour localgov --version 11
+   ```
+
+   Anything you leave out is still prompted for, so flags and prompts mix freely. `--defaults` accepts every default and leaves the module and theme blank, which is the fastest route to a site-only project:
+
+   ```bash
+   ./scripts/init.sh --defaults                     # site-only, localgov, Drupal 11
+   ./scripts/init.sh --defaults --theme my_theme    # defaults, plus a custom theme
+   ```
+
+   With `--defaults`, or with a full flag set, `init.sh` never touches a tty. Use the `--flag=value` form for a deliberately empty value: `--module=""` selects site-only mode instead of falling back to the prompt. `./scripts/init.sh --help` lists every flag.
+
+   The resolved answers are written to `template.answers` in the project root before substitution. Commit it: it records what the run decided (prompted values and the derived `DRUPAL_TYPE`, `COMPOSER_PROJECT`, and `INSTALL_PROFILE`), so the initialisation is auditable afterwards and repeatable as a flag invocation.
 3. Spin the whole environment up with one command:
 
    ```bash

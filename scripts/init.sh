@@ -1,19 +1,104 @@
 #!/usr/bin/env bash
 # One-time template initialiser. Run from the repo root immediately after
 # creating a repo from this template:  ./scripts/init.sh
-# Prompts for project values, substitutes {{TOKENS}} across all files, then
-# removes itself and TEMPLATE.md. Portable across macOS (BSD) and Linux (GNU).
+# Takes its answers from flags, from prompts, or from both; records them in
+# template.answers; substitutes {{TOKENS}} across every file that holds one;
+# then removes itself and TEMPLATE.md. Portable across macOS (BSD) and Linux
+# (GNU).
 set -euo pipefail
 
-BOLD="\033[1m"; GREEN="\033[32m"; YELLOW="\033[33m"; RESET="\033[0m"
+BOLD="\033[1m"; GREEN="\033[32m"; YELLOW="\033[33m"; RED="\033[31m"; RESET="\033[0m"
 info()  { echo -e "${BOLD}> $*${RESET}"; }
 ok()    { echo -e "${GREEN}OK $*${RESET}"; }
 warn()  { echo -e "${YELLOW}!! $*${RESET}"; }
+die()   { echo -e "${RED}!! $*${RESET}" >&2; exit 1; }
 
-# Files that may contain tokens.
-FILES=(AGENTS.md agr.toml README.md TEMPLATE.md .gitignore Makefile \
-  scripts/setup.sh .claude/settings.local.json.dist .claude/commands/a11y-check.md \
-  .ddev/config.yaml phpcs.xml.dist phpstan.neon package.json .github/workflows/ci.yml)
+ANSWERS_FILE="template.answers"
+
+usage() {
+  cat <<'EOF'
+Usage: ./scripts/init.sh [options]
+
+Any value not given as a flag is prompted for. With --defaults, or with a full
+flag set, the script runs without touching a tty.
+
+  --module NAME          Module machine name ("" for a site-only project)
+  --module-label LABEL   Module label (default: title-cased machine name)
+  --module-path PATH     Module path (default: web/modules/custom/NAME)
+  --module-repo URL      Module git URL ("" to skip cloning)
+  --theme NAME           Theme machine name ("" for no custom theme)
+  --theme-label LABEL    Theme label (default: title-cased machine name)
+  --ddev-name NAME       DDEV project name
+  --ddev-url URL         DDEV site URL (default: https://DDEV_NAME.ddev.site)
+  --client TEXT          Client / context line
+  --skill-fork OWNER     GitHub owner of the drupal-agent-resources fork
+  --flavour FLAVOUR      localgov | vanilla | cms
+  --version VERSION      11 | 10 (cms is Drupal 11 only)
+  --defaults             Accept every default and leave module and theme blank
+  -h, --help             Show this help
+
+Flags take --flag VALUE or --flag=VALUE. Use --flag=VALUE for an empty value,
+for example --module="" to select site-only mode without a prompt.
+EOF
+}
+
+# Answers, with a companion flag recording whether the value came from a flag.
+# An explicitly empty flag value counts as supplied, so --module="" selects
+# site-only mode rather than falling back to the prompt.
+MODULE_NAME="";  SET_MODULE_NAME=0
+MODULE_LABEL=""; SET_MODULE_LABEL=0
+MODULE_PATH="";  SET_MODULE_PATH=0
+MODULE_REPO="";  SET_MODULE_REPO=0
+THEME_NAME="";   SET_THEME_NAME=0
+THEME_LABEL="";  SET_THEME_LABEL=0
+DDEV_NAME="";    SET_DDEV_NAME=0
+DDEV_URL="";     SET_DDEV_URL=0
+CLIENT="";       SET_CLIENT=0
+SKILL_FORK="";   SET_SKILL_FORK=0
+FLAVOUR="";      SET_FLAVOUR=0
+VERSION="";      SET_VERSION=0
+DEFAULTS=0
+
+require_value() { # require_value <flag> <remaining argc> <next arg>
+  local flag="$1" argc="$2" value="${3-}"
+  [ "$argc" -ge 2 ] || die "$flag requires a value (use $flag=VALUE for an empty one)."
+  case "$value" in
+    --*) die "$flag requires a value, got $value. Use $flag=VALUE for a value starting with --." ;;
+  esac
+}
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --module=*)       MODULE_NAME="${1#*=}";  SET_MODULE_NAME=1 ;;
+    --module)         require_value "$1" "$#" "${2-}"; MODULE_NAME="$2";  SET_MODULE_NAME=1;  shift ;;
+    --module-label=*) MODULE_LABEL="${1#*=}"; SET_MODULE_LABEL=1 ;;
+    --module-label)   require_value "$1" "$#" "${2-}"; MODULE_LABEL="$2"; SET_MODULE_LABEL=1; shift ;;
+    --module-path=*)  MODULE_PATH="${1#*=}";  SET_MODULE_PATH=1 ;;
+    --module-path)    require_value "$1" "$#" "${2-}"; MODULE_PATH="$2";  SET_MODULE_PATH=1;  shift ;;
+    --module-repo=*)  MODULE_REPO="${1#*=}";  SET_MODULE_REPO=1 ;;
+    --module-repo)    require_value "$1" "$#" "${2-}"; MODULE_REPO="$2";  SET_MODULE_REPO=1;  shift ;;
+    --theme=*)        THEME_NAME="${1#*=}";   SET_THEME_NAME=1 ;;
+    --theme)          require_value "$1" "$#" "${2-}"; THEME_NAME="$2";   SET_THEME_NAME=1;   shift ;;
+    --theme-label=*)  THEME_LABEL="${1#*=}";  SET_THEME_LABEL=1 ;;
+    --theme-label)    require_value "$1" "$#" "${2-}"; THEME_LABEL="$2";  SET_THEME_LABEL=1;  shift ;;
+    --ddev-name=*)    DDEV_NAME="${1#*=}";    SET_DDEV_NAME=1 ;;
+    --ddev-name)      require_value "$1" "$#" "${2-}"; DDEV_NAME="$2";    SET_DDEV_NAME=1;    shift ;;
+    --ddev-url=*)     DDEV_URL="${1#*=}";     SET_DDEV_URL=1 ;;
+    --ddev-url)       require_value "$1" "$#" "${2-}"; DDEV_URL="$2";     SET_DDEV_URL=1;     shift ;;
+    --client=*)       CLIENT="${1#*=}";       SET_CLIENT=1 ;;
+    --client)         require_value "$1" "$#" "${2-}"; CLIENT="$2";       SET_CLIENT=1;       shift ;;
+    --skill-fork=*)   SKILL_FORK="${1#*=}";   SET_SKILL_FORK=1 ;;
+    --skill-fork)     require_value "$1" "$#" "${2-}"; SKILL_FORK="$2";   SET_SKILL_FORK=1;   shift ;;
+    --flavour=*)      FLAVOUR="${1#*=}";      SET_FLAVOUR=1 ;;
+    --flavour)        require_value "$1" "$#" "${2-}"; FLAVOUR="$2";      SET_FLAVOUR=1;      shift ;;
+    --version=*)      VERSION="${1#*=}";      SET_VERSION=1 ;;
+    --version)        require_value "$1" "$#" "${2-}"; VERSION="$2";      SET_VERSION=1;      shift ;;
+    --defaults)       DEFAULTS=1 ;;
+    -h|--help)        usage; exit 0 ;;
+    *)                usage >&2; die "Unknown option: $1" ;;
+  esac
+  shift
+done
 
 if ! grep -q "{{MODULE_INTRO}}" AGENTS.md 2>/dev/null; then
   warn "Already initialised (no {{MODULE_INTRO}} token in AGENTS.md). Aborting."
@@ -22,36 +107,89 @@ fi
 
 ask() { # ask <prompt> <default> -> echoes answer
   local prompt="$1" def="${2:-}" ans
+  if [ "$DEFAULTS" = "1" ]; then echo "$def"; return 0; fi
   if [ -n "$def" ]; then read -r -p "$prompt [$def]: " ans; echo "${ans:-$def}"
   else read -r -p "$prompt: " ans; echo "$ans"; fi
 }
 
 titlecase() { echo "$1" | tr '_' ' ' | awk '{for(i=1;i<=NF;i++)$i=toupper(substr($i,1,1))substr($i,2)}1'; }
 
+MACHINE_NAME_RULE="Machine names must start with a lowercase letter and may contain only lowercase letters, digits and underscores (for example my_module). Hyphens are not valid."
+
+valid_machine_name() { # valid_machine_name <value> -> 0 when usable
+  local ans="$1"
+  case "$ans" in [a-z]*) ;; *) return 1 ;; esac
+  [ -z "$(printf '%s' "$ans" | tr -d 'a-z0-9_')" ]
+}
+
+check_machine_name() { # check_machine_name <value> <flag> (empty is allowed)
+  local ans="$1" flag="$2"
+  [ -z "$ans" ] && return 0
+  valid_machine_name "$ans" && return 0
+  die "$flag: $MACHINE_NAME_RULE"
+}
+
+require_flag_value() { # require_flag_value <value> <flag>
+  [ -n "$1" ] || die "$2 must not be empty."
+}
+
 ask_machine_name() { # ask_machine_name <prompt> -> echoes a valid name or empty
   local prompt="$1" ans
   while true; do
     ans="$(ask "$prompt" '')"
     [ -z "$ans" ] && { echo ""; return 0; }
-    case "$ans" in
-      [a-z]*) ;;
-      *) warn "Machine names must start with a lowercase letter." >&2; continue ;;
-    esac
-    if [ -z "$(printf '%s' "$ans" | tr -d 'a-z0-9_')" ]; then
-      echo "$ans"; return 0
-    fi
-    warn "Machine names may contain only lowercase letters, digits and underscores (for example my_module). Hyphens are not valid." >&2
+    if valid_machine_name "$ans"; then echo "$ans"; return 0; fi
+    warn "$MACHINE_NAME_RULE" >&2
   done
 }
 
+# Validate flag values before the first prompt, so a typo fails immediately
+# rather than after a run of questions. Flags whose emptiness only matters in
+# module or theme mode (--module-label, --module-path, --theme-label) are
+# checked further down, once the mode is known.
+[ "$SET_MODULE_NAME" = "1" ] && check_machine_name "$MODULE_NAME" "--module"
+[ "$SET_THEME_NAME" = "1" ]  && check_machine_name "$THEME_NAME" "--theme"
+[ "$SET_DDEV_NAME" = "1" ]   && require_flag_value "$DDEV_NAME" "--ddev-name"
+[ "$SET_DDEV_URL" = "1" ]    && require_flag_value "$DDEV_URL" "--ddev-url"
+[ "$SET_CLIENT" = "1" ]      && require_flag_value "$CLIENT" "--client"
+[ "$SET_SKILL_FORK" = "1" ]  && require_flag_value "$SKILL_FORK" "--skill-fork"
+# Flag values are validated rather than silently normalised; the prompts keep
+# their historic permissive fallback (anything else means localgov, anything
+# but 10 means 11).
+if [ "$SET_FLAVOUR" = "1" ]; then
+  case "$FLAVOUR" in
+    localgov|vanilla|drupal|cms) ;;
+    *) die "--flavour must be localgov, vanilla or cms (got '$FLAVOUR')." ;;
+  esac
+fi
+if [ "$SET_VERSION" = "1" ]; then
+  case "$VERSION" in
+    10|11) ;;
+    *) die "--version must be 11 or 10 (got '$VERSION')." ;;
+  esac
+fi
+
 echo ""; info "Initialise this template"; echo ""
-MODULE_NAME="$(ask_machine_name 'Module machine name (blank for a site-only project)')"
+if [ "$SET_MODULE_NAME" != "1" ]; then
+  MODULE_NAME="$(ask_machine_name 'Module machine name (blank for a site-only project)')"
+fi
 
 if [ -n "$MODULE_NAME" ]; then
-  MODULE_LABEL="$(ask 'Module label' "$(titlecase "$MODULE_NAME")")"
-  MODULE_PATH="$(ask 'Module path' "web/modules/custom/$MODULE_NAME")"
-  MODULE_REPO="$(ask 'Module git URL (blank to skip cloning)' '')"
+  if [ "$SET_MODULE_LABEL" = "1" ]; then
+    require_flag_value "$MODULE_LABEL" "--module-label"
+  else
+    MODULE_LABEL="$(ask 'Module label' "$(titlecase "$MODULE_NAME")")"
+  fi
+  if [ "$SET_MODULE_PATH" = "1" ]; then
+    require_flag_value "$MODULE_PATH" "--module-path"
+  else
+    MODULE_PATH="$(ask 'Module path' "web/modules/custom/$MODULE_NAME")"
+  fi
+  if [ "$SET_MODULE_REPO" != "1" ]; then
+    MODULE_REPO="$(ask 'Module git URL (blank to skip cloning)' '')"
+  fi
 else
+  # Site-only mode ignores the module label, path and repo answers.
   MODULE_LABEL=""
   MODULE_PATH="web/modules/custom"
   MODULE_REPO=""
@@ -59,9 +197,15 @@ fi
 
 # Optional custom theme. Module and theme are independent: all four
 # combinations (module only, theme only, both, neither) are supported.
-THEME_NAME="$(ask_machine_name 'Theme machine name (blank for no custom theme)')"
+if [ "$SET_THEME_NAME" != "1" ]; then
+  THEME_NAME="$(ask_machine_name 'Theme machine name (blank for no custom theme)')"
+fi
 if [ -n "$THEME_NAME" ]; then
-  THEME_LABEL="$(ask 'Theme label' "$(titlecase "$THEME_NAME")")"
+  if [ "$SET_THEME_LABEL" = "1" ]; then
+    require_flag_value "$THEME_LABEL" "--theme-label"
+  else
+    THEME_LABEL="$(ask 'Theme label' "$(titlecase "$THEME_NAME")")"
+  fi
   THEME_PATH="web/themes/custom/$THEME_NAME"
 else
   THEME_LABEL=""
@@ -75,14 +219,26 @@ elif [ -n "$THEME_NAME" ]; then
 else
   DEF_DDEV="site-dev"
 fi
-DDEV_NAME="$(ask 'DDEV project name' "$DEF_DDEV")"
-DDEV_URL="$(ask 'DDEV site URL' "https://$DDEV_NAME.ddev.site")"
-CLIENT="$(ask 'Client / context' 'a local council')"
-SKILL_FORK="$(ask 'drupal-agent-resources fork owner (hosts drupal-localgov)' 'jamesfmcgrath')"
+if [ "$SET_DDEV_NAME" != "1" ]; then
+  DDEV_NAME="$(ask 'DDEV project name' "$DEF_DDEV")"
+fi
+if [ "$SET_DDEV_URL" != "1" ]; then
+  DDEV_URL="$(ask 'DDEV site URL' "https://$DDEV_NAME.ddev.site")"
+fi
+if [ "$SET_CLIENT" != "1" ]; then
+  CLIENT="$(ask 'Client / context' 'a local council')"
+fi
+if [ "$SET_SKILL_FORK" != "1" ]; then
+  SKILL_FORK="$(ask 'drupal-agent-resources fork owner (hosts drupal-localgov)' 'jamesfmcgrath')"
+fi
 
 echo ""
-FLAVOUR="$(ask 'Drupal flavour: localgov, vanilla or cms' 'localgov')"
-VERSION="$(ask 'Drupal major version: 11 or 10' '11')"
+if [ "$SET_FLAVOUR" != "1" ]; then
+  FLAVOUR="$(ask 'Drupal flavour: localgov, vanilla or cms' 'localgov')"
+fi
+if [ "$SET_VERSION" != "1" ]; then
+  VERSION="$(ask 'Drupal major version: 11 or 10' '11')"
+fi
 
 case "$VERSION" in 10) DRUPAL_TYPE="drupal10";; *) DRUPAL_TYPE="drupal11"; VERSION="11";; esac
 case "$FLAVOUR" in
@@ -152,15 +308,77 @@ else
   MODULE_AFFECTS="the site includes"
 fi
 
-echo ""; info "Applying..."
-sub() { # sub <token> <value>
-  local token="$1" value="$2" f tmp
-  for f in "${FILES[@]}"; do
-    [ -f "$f" ] || continue
-    tmp="$(mktemp)"
-    # Write back into the original file so its permissions (e.g. +x) are kept.
-    sed "s|{{$token}}|$value|g" "$f" > "$tmp" && cat "$tmp" > "$f" && rm -f "$tmp"
+# Record the resolved answers before substituting, so the run is auditable and
+# can be reproduced with the matching flags. Each key maps to the flag of the
+# same name (MODULE_NAME to --module, THEME_NAME to --theme, and so on); the
+# last four are derived from the flavour and version answers.
+{
+  echo "# Answers used by scripts/init.sh on $(date -u '+%Y-%m-%d'). Not a shell script:"
+  echo "# a record of the run, one KEY=value per line, values unquoted."
+  echo "MODULE_NAME=$MODULE_NAME"
+  echo "MODULE_LABEL=$MODULE_LABEL"
+  echo "MODULE_PATH=$MODULE_PATH"
+  echo "MODULE_REPO=$MODULE_REPO"
+  echo "THEME_NAME=$THEME_NAME"
+  echo "THEME_LABEL=$THEME_LABEL"
+  echo "THEME_PATH=$THEME_PATH"
+  echo "DDEV_NAME=$DDEV_NAME"
+  echo "DDEV_URL=$DDEV_URL"
+  echo "CLIENT=$CLIENT"
+  echo "SKILL_FORK=$SKILL_FORK"
+  echo "FLAVOUR=$FLAVOUR"
+  echo "VERSION=$VERSION"
+  echo "DRUPAL_TYPE=$DRUPAL_TYPE"
+  echo "DRUPAL_FLAVOUR=$DRUPAL_FLAVOUR"
+  echo "COMPOSER_PROJECT=$COMPOSER_PROJECT"
+  echo "INSTALL_PROFILE=$INSTALL_PROFILE"
+} > "$ANSWERS_FILE"
+
+# Files that carry the {{UPPER_SNAKE}} convention as literal text (companion
+# maintainer docs) rather than as tokens to substitute. scripts/test-template.sh
+# names the same list.
+TOKEN_DOC_EXCEPTIONS=(PROJECT.md PROMPTS.md memory.md)
+# Paths never substituted into: this script (rewriting it while bash is still
+# reading it corrupts the run), the suite that documents tokens as test
+# fixtures, and the answers file just written.
+SKIP_PATHS=(./scripts/init.sh ./scripts/test-template.sh "./$ANSWERS_FILE")
+
+discover_token_files() { # -> one path per line, relative to the repo root
+  local ex exclude_args=()
+  for ex in "${TOKEN_DOC_EXCEPTIONS[@]}"; do exclude_args+=(--exclude="$ex"); done
+  # docs/ and template-docs/ hold maintainer history that quotes tokens
+  # verbatim; vendor/ and web/ only exist if setup.sh has already run, and
+  # contrib code is never ours to rewrite.
+  grep -rlE '\{\{[A-Z_]+\}\}' . \
+    --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=vendor \
+    --exclude-dir=web --exclude-dir=docs --exclude-dir=template-docs \
+    "${exclude_args[@]}" 2>/dev/null || true
+}
+
+FILES=()
+while IFS= read -r found; do
+  [ -n "$found" ] || continue
+  skip=0
+  for skip_path in "${SKIP_PATHS[@]}"; do
+    if [ "$found" = "$skip_path" ]; then skip=1; break; fi
   done
+  if [ "$skip" = "1" ]; then continue; fi
+  FILES+=("$found")
+done <<EOF
+$(discover_token_files)
+EOF
+
+[ "${#FILES[@]}" -gt 0 ] || die "No files with {{TOKENS}} found. Run this from the repo root."
+
+echo ""; info "Applying to ${#FILES[@]} files..."
+
+# & and | are special in a sed replacement (or are the delimiter), so a client
+# name like "Bath & North East Somerset" has to be escaped.
+sed_escape() { printf '%s' "$1" | sed -e 's/[\\&|]/\\&/g'; }
+
+SED_ARGS=()
+sub() { # sub <token> <value>
+  SED_ARGS+=(-e "s|{{$1}}|$(sed_escape "$2")|g")
 }
 sub MODULE_NAME         "$MODULE_NAME"
 sub MODULE_LABEL        "$MODULE_LABEL"
@@ -178,13 +396,20 @@ sub THEME_LAYER         "$THEME_LAYER"
 sub PACKAGE_NAME        "$PACKAGE_NAME"
 sub PACKAGE_DESCRIPTION "$PACKAGE_DESCRIPTION"
 sub DDEV_NAME           "$DDEV_NAME"
-sub DDEV_URL         "$DDEV_URL"
-sub CLIENT           "$CLIENT"
-sub SKILL_FORK       "$SKILL_FORK"
-sub DRUPAL_TYPE      "$DRUPAL_TYPE"
-sub DRUPAL_FLAVOUR   "$DRUPAL_FLAVOUR"
-sub INSTALL_PROFILE  "$INSTALL_PROFILE"
-sub COMPOSER_PROJECT "$COMPOSER_PROJECT"
+sub DDEV_URL            "$DDEV_URL"
+sub CLIENT              "$CLIENT"
+sub SKILL_FORK          "$SKILL_FORK"
+sub DRUPAL_TYPE         "$DRUPAL_TYPE"
+sub DRUPAL_FLAVOUR      "$DRUPAL_FLAVOUR"
+sub INSTALL_PROFILE     "$INSTALL_PROFILE"
+sub COMPOSER_PROJECT    "$COMPOSER_PROJECT"
+
+for f in "${FILES[@]}"; do
+  [ -f "$f" ] || continue
+  tmp="$(mktemp)"
+  # Write back into the original file so its permissions (e.g. +x) are kept.
+  sed "${SED_ARGS[@]}" "$f" > "$tmp" && cat "$tmp" > "$f" && rm -f "$tmp"
+done
 
 rm -f TEMPLATE.md scripts/test-template.sh
 chmod +x scripts/setup.sh scripts/install-drupal 2>/dev/null || true
@@ -198,6 +423,7 @@ else
   SCOPE="site-only"
 fi
 ok "Tokens applied ($FLAVOUR, Drupal $VERSION, $SCOPE)."
+ok "Answers recorded in $ANSWERS_FILE; commit it alongside the substituted files."
 info "Removing initialiser (scripts/init.sh)..."
 rm -f scripts/init.sh
 ok "Done. Next: ./scripts/setup.sh"
