@@ -118,6 +118,32 @@ touched.
   distributions, including vanilla and cms, do without enabling debug.
   setup.sh now verifies Twig debug directly after the copy step instead of
   assuming it. Vanilla and cms still need a live check.
+- Stage 12, visual regression testing (VRT): DONE (2026-08-10). Reuses the
+  @playwright/test stack the accessibility job already installs rather than
+  adding BackstopJS. a11y-urls.json renamed to scan-urls.json, the one
+  shared URL list for both scanners; its shipped default trimmed to `["/"]`,
+  the only path confirmed to resolve (with or without a redirect) on every
+  flavour straight after install. New tests/vrt/vrt.spec.mjs and a
+  tests/vrt-scoped playwright.config.mjs; new Makefile targets vrt and
+  vrt-update. Baselines are OS-suffixed by directory
+  (tests/vrt/__screenshots__/<platform>/…); only linux/ is authoritative and
+  committed, darwin/ (and win32/) are gitignored. The CI a11y job, renamed
+  "browser checks", now runs the VRT spec after the axe scan against the
+  same served site and shared scan-urls.json: a missing linux/ baseline is
+  generated and uploaded as an artifact rather than failing the run; a
+  genuine diff fails the job and uploads the HTML diff report. scripts/
+  test-template.sh grew assertions that scan-urls.json, playwright.config.mjs,
+  and tests/vrt/vrt.spec.mjs survive init.sh verbatim, plus `make -n vrt`/
+  `vrt-update` parse checks; full suite passes 528/528. Live-verified locally
+  against a throwaway LocalGov 11 site-only install (dev-drupal-11, staged
+  under $HOME per the Colima note above): screenshots generate on the first
+  run, and the comparison correctly fails on a real diff, discovered
+  organically rather than staged, since a fresh install's front page
+  redirects anonymous visitors to /user/login, whose LocalGov Design System
+  template shows a randomly chosen hero photo per request (~25% pixel diff,
+  reproduced twice). Not yet run: the CI job itself on real GitHub Actions
+  infrastructure (only YAML-checked so far), and the authoritative Linux
+  baseline generation/commit, both needing a live GitHub Actions run.
 
 ---
 

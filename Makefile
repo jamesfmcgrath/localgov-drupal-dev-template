@@ -5,7 +5,7 @@
 
 .PHONY: help start stop restart open logs si install enable cr recipe \
         test lint lint-fix stan check format format-check twig-lint twig-fix \
-        spell lint-js lint-css module-ci subtheme component \
+        spell lint-js lint-css vrt vrt-update module-ci subtheme component \
         mod-log mod-status mod-fetch mod-branch tag switch mr \
         guard-module-name guard-module-git guard-theme-name
 
@@ -207,6 +207,12 @@ lint-css: ## Lint custom CSS with Drupal core's Stylelint config
 	done
 
 check: lint stan test twig-lint spell lint-js lint-css ## Run all quality checks (lint + stan + test + twig-lint + spell + lint-js + lint-css)
+
+vrt: ## Visual regression test (Playwright); comparisons are authoritative on Linux/CI only, macOS runs are advisory
+	npx playwright test tests/vrt
+
+vrt-update: ## Regenerate VRT baselines; only commit baselines generated on Linux/CI, never from a macOS run
+	npx playwright test tests/vrt --update-snapshots
 
 format: ## Format front-end assets with Prettier (CSS/JS/JSON/YAML/MD)
 	@for p in $(LINT_PATHS); do \

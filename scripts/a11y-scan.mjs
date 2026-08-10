@@ -19,7 +19,7 @@ function parseArgs(argv) {
 }
 
 function loadUrls() {
-  const configPath = path.join(__dirname, '..', 'a11y-urls.json');
+  const configPath = path.join(__dirname, '..', 'scan-urls.json');
   const raw = readFileSync(configPath, 'utf8');
   const paths = JSON.parse(raw);
   if (!Array.isArray(paths) || paths.length === 0) {
