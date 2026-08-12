@@ -599,6 +599,17 @@ treated as a fallback for distributions that do not already ship their own
 file, not as a guarantee that Twig debug is on. Vanilla and cms still need a
 live check to confirm the actual behaviour.
 
+## Release convention
+
+Tag the template (`v1.0.0` onward, semver) whenever a stage from PROMPTS.md
+lands on main. Created projects have no update path back to this template:
+`init.sh` deletes itself and `template-docs/` on first run, so a project has
+no mechanism to pull later template changes. The tag plus CHANGELOG.md is
+the only record a maintainer of an already-created project has to work from;
+they read CHANGELOG.md and apply relevant changes by hand. Move the
+Unreleased entries into a new dated version section when tagging, and start
+a fresh empty Unreleased section above it.
+
 ## Start prompt
 
 You are maintaining the localgov-drupal-dev-template repo. Do not change

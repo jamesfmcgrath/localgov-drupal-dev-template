@@ -2,7 +2,7 @@
 
 Date: 2026-08-07
 Branch: `feat/staage-11-local-dev-recipes` (kept as-is, not merged or pushed)
-Plan: `docs/superpowers/plans/2026-08-06-local-dev-recipes.md`
+Plan: `template-docs/superpowers/plans/2026-08-06-local-dev-recipes.md`
 Final commit: `62482ee`
 
 ## Summary

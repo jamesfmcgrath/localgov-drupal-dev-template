@@ -40,11 +40,12 @@ and so the same project can be recreated by turning those lines back into flags.
 `grep -rlE '\{\{[A-Z_]+\}\}'` from the repo root each run, so a file added to
 the template later is picked up with no change to the script. Excluded from that
 sweep: `.git/`, `node_modules/`, `vendor/` and `web/` (contrib and vendor code
-is never ours to rewrite), `docs/` and `template-docs/` (maintainer history that
-quotes tokens verbatim), the token-convention docs `PROJECT.md`, `PROMPTS.md`
-and `memory.md`, `template.answers` itself, and the two scripts that delete
-themselves at the end of the run (`scripts/init.sh`, which bash is still
-reading, and `scripts/test-template.sh`).
+is never ours to rewrite), `template-docs/` (maintainer history, including
+`PROJECT.md`, `PROMPTS.md` and `memory.md`, that quotes tokens verbatim),
+`template.answers` itself, and the two scripts that delete themselves at the
+end of the run (`scripts/init.sh`, which bash is still reading, and
+`scripts/test-template.sh`). `docs/` is not excluded: it ships to the created
+project, so any tokens it uses get substituted like any other file.
 
 Substitution writes back into the original file rather than moving a temp file
 over it, so executable bits survive. Values are escaped for `sed`, so a client

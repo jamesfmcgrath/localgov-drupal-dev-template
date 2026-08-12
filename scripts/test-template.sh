@@ -5,7 +5,7 @@
 # Combos drive init.sh through its flags with stdin closed, except one that
 # keeps the interactive prompt path covered via init_input.
 # No network, no composer, no DDEV: the live spin-up remains a manual
-# verification step (see PROJECT.md).
+# verification step (see template-docs/PROJECT.md).
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -51,7 +51,7 @@ INJECTED_FILE="scratch-token-check.md"
 
 # Files that document the {{UPPER_SNAKE}} token convention as literal text
 # (companion maintainer docs), not files init.sh substitutes into.
-TOKEN_DOC_EXCEPTIONS=("PROJECT.md" "PROMPTS.md" "memory.md")
+TOKEN_DOC_EXCEPTIONS=("template-docs/PROJECT.md" "template-docs/PROMPTS.md" "template-docs/memory.md")
 
 yaml_parse() {
   local f="$1"
@@ -105,7 +105,7 @@ init_flags() { # init_flags <module_name> <theme_name> <flavour> <version>
 
 stage_copy() { # stage_copy <dest>
   rsync -a --exclude='.git' --exclude='_to_delete' --exclude='.superpowers' \
-    --exclude='docs' --exclude='.claude/settings.local.json' \
+    --exclude='template-docs' --exclude='.claude/settings.local.json' \
     --exclude='node_modules' --exclude='package-lock.json' \
     "$REPO_ROOT"/ "$1"/ >/dev/null
 }
@@ -184,6 +184,7 @@ assert_common() { # assert_common <dir> <label>
   if [ ! -e "$dir/scripts/init.sh" ]; then pass "$label: scripts/init.sh removed itself"; else fail "$label: scripts/init.sh still present"; fi
   if [ ! -e "$dir/TEMPLATE.md" ]; then pass "$label: TEMPLATE.md removed"; else fail "$label: TEMPLATE.md still present"; fi
   if [ ! -e "$dir/scripts/test-template.sh" ]; then pass "$label: scripts/test-template.sh removed"; else fail "$label: scripts/test-template.sh still present"; fi
+  if [ ! -e "$dir/template-docs" ]; then pass "$label: template-docs/ removed"; else fail "$label: template-docs/ still present"; fi
 
   assert_no_leftover_tokens "$dir" "$label"
 

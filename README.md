@@ -14,7 +14,7 @@ A starting point for working locally on a Drupal 10/11 module, theme, or site, w
 - PHP tooling wired to the Makefile: PHPCS (Drupal, DrupalPractice), PHPStan (phpstan-drupal), PHPUnit, Twig CS Fixer for Twig templates (Prettier does not lint Twig), plus Prettier for front-end assets.
 - A GitHub Actions CI workflow (`.github/workflows/ci.yml`) running PHPCS, PHPStan, Twig CS Fixer, PHPUnit (unit + kernel), the Prettier check, and a "browser checks" job (axe-core accessibility scan, WCAG 2.2 AA, plus the visual regression test below) against an installed sqlite site, on push and pull request.
 - Visual regression testing (`tests/vrt/vrt.spec.mjs`, `playwright.config.mjs`): reuses the same `@playwright/test` install the accessibility job already brings in, screenshotting the pages in `scan-urls.json` and comparing against committed baselines. Baselines are generated and compared on Linux/CI only (font rendering makes cross-OS baselines flaky); see "Visual regression" below.
-- drupal.org (git.drupalcode.org) pipeline parity: `assets/module.gitlab-ci.yml` is a ready `.gitlab-ci.yml` for the module, copied in with `make module-ci`. Local tooling mirrors the same pipeline's default validation jobs, cspell (`make spell`), ESLint and Stylelint (`make lint-js`, `make lint-css`) using Drupal core's own configs, alongside the existing PHPCS/PHPStan/Twig CS Fixer, so `make check` predicts what runs there. Twig CS Fixer is skipped by default upstream; the shipped pipeline turns it back on to match this template's local tooling. Nightwatch (browser JS tests) and Composer Lint have no local or GitHub Actions equivalent and stay CI-only. The cspell config and dictionary (`cspell.json`, `.cspell-project-words.txt`) live at this template's root, not in `make module-ci`'s copy; a module split into its own drupalcode repo needs its own copy of those two files for full parity on that job.
+- drupal.org (git.drupalcode.org) pipeline parity: `assets/module.gitlab-ci.yml` is a ready `.gitlab-ci.yml` for the module, copied in with `make module-ci`, and local tooling (`make check`) mirrors the same pipeline's default validation jobs. See [`docs/pipeline-parity.md`](docs/pipeline-parity.md) for what matches and what stays CI-only.
 - A `scripts/test-template.sh` regression suite that exercises `init.sh` across every supported flavour/version combo and all four module/theme combinations, wired into CI so the bare template gets a real, green run instead of skipping everything.
 - A `scripts/init.sh` that turns the template into your project by filling in a handful of tokens.
 
@@ -139,6 +139,14 @@ Baselines are generated and compared on **Linux only**, because font rendering d
 **Alternative:** [BackstopJS](https://github.com/garris/BackstopJS), including the official [`ddev/ddev-backstopjs`](https://github.com/ddev/ddev-backstopjs) add-on, is a well-supported alternative if you specifically want its standalone HTML report UI. This template does not run both stacks side by side: `@playwright/test` already ships here for accessibility testing, has `toHaveScreenshot()` built in, and already has a working install-serve-scan CI pattern, so adding BackstopJS as well would mean maintaining two browser-automation stacks for one job.
 
 Live-verified locally (2026-08-10) against a throwaway LocalGov 11 install: screenshots generate and the comparison correctly fails on a real diff. On a fresh install with no front page configured, `/` redirects anonymous visitors to `/user/login`, whose LocalGov Design System template shows a randomly chosen hero photo per request (a genuine ~25% pixel diff between two loads, not a bug in this plumbing). Point `scan-urls.json` at real, deterministic pages once a project has content; a login page with rotating decorative imagery is a poor VRT target on any project.
+
+## Updating an existing project
+
+`init.sh` deletes itself and `template-docs/` on first run, so a project
+created from this template has no update path back to it: there is no
+command that pulls in later template changes. Check `CHANGELOG.md` in this
+template's repo for what has landed since your project was created, and
+apply anything relevant by hand.
 
 ## Notes
 

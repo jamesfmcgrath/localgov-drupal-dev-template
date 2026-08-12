@@ -761,7 +761,7 @@ Leave a placeholder line for now; Task 11 replaces it with the real verification
 
 ```markdown
 Stage 11, local dev recipes: IN PROGRESS, see Task 11 of
-docs/superpowers/plans/2026-08-06-local-dev-recipes.md for live verification.
+template-docs/superpowers/plans/2026-08-06-local-dev-recipes.md for live verification.
 ```
 
 - [ ] **Step 7: PROMPTS.md, Status**

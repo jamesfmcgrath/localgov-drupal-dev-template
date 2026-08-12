@@ -334,25 +334,19 @@ fi
   echo "INSTALL_PROFILE=$INSTALL_PROFILE"
 } > "$ANSWERS_FILE"
 
-# Files that carry the {{UPPER_SNAKE}} convention as literal text (companion
-# maintainer docs) rather than as tokens to substitute. scripts/test-template.sh
-# names the same list.
-TOKEN_DOC_EXCEPTIONS=(PROJECT.md PROMPTS.md memory.md)
 # Paths never substituted into: this script (rewriting it while bash is still
 # reading it corrupts the run), the suite that documents tokens as test
 # fixtures, and the answers file just written.
 SKIP_PATHS=(./scripts/init.sh ./scripts/test-template.sh "./$ANSWERS_FILE")
 
 discover_token_files() { # -> one path per line, relative to the repo root
-  local ex exclude_args=()
-  for ex in "${TOKEN_DOC_EXCEPTIONS[@]}"; do exclude_args+=(--exclude="$ex"); done
-  # docs/ and template-docs/ hold maintainer history that quotes tokens
-  # verbatim; vendor/ and web/ only exist if setup.sh has already run, and
-  # contrib code is never ours to rewrite.
+  # template-docs/ holds maintainer history that quotes tokens verbatim;
+  # vendor/ and web/ only exist if setup.sh has already run, and contrib
+  # code is never ours to rewrite.
   grep -rlE '\{\{[A-Z_]+\}\}' . \
     --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=vendor \
-    --exclude-dir=web --exclude-dir=docs --exclude-dir=template-docs \
-    "${exclude_args[@]}" 2>/dev/null || true
+    --exclude-dir=web --exclude-dir=template-docs \
+    2>/dev/null || true
 }
 
 FILES=()
@@ -412,6 +406,7 @@ for f in "${FILES[@]}"; do
 done
 
 rm -f TEMPLATE.md scripts/test-template.sh
+rm -rf template-docs
 chmod +x scripts/setup.sh scripts/install-drupal 2>/dev/null || true
 if [ -n "$MODULE_NAME" ] && [ -n "$THEME_NAME" ]; then
   SCOPE="module $MODULE_NAME, theme $THEME_NAME"
