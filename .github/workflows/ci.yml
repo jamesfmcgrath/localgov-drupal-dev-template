@@ -260,7 +260,7 @@ jobs:
           vendor/bin/drush si {{INSTALL_PROFILE}} -y \
             --db-url=sqlite://sites/default/files/.ht.sqlite
 
-      - name: Create a node for the accessibility scan
+      - name: Create a node and set a deterministic front page
         run: |
           node_id="$(vendor/bin/drush php:eval '
             $bundles = array_keys(\Drupal\node\Entity\NodeType::loadMultiple());
@@ -275,8 +275,18 @@ jobs:
           ')"
           if [ -n "$node_id" ]; then
             echo "Created node $node_id"
+            # LocalGov redirects an anonymous "/" visit to /user/login, whose
+            # Design System login template shows a randomly chosen hero photo
+            # per request, so a screenshot of "/" is never the same twice.
+            # Pointing the front page at the node just created makes "/"
+            # deterministic for both the axe-core scan and the VRT spec,
+            # which share this one scan-urls.json list and always include
+            # "/" for every flavour.
+            vendor/bin/drush config:set system.site page.front "/node/${node_id}" -y
+            echo "Set system.site page.front to /node/${node_id}"
           else
             echo "No content types available; the scan will skip a node page."
+            echo "Front page left at its install default; no node exists to point it at."
           fi
           echo "A11Y_NODE_ID=${node_id}" >> "$GITHUB_ENV"
 

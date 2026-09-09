@@ -79,8 +79,25 @@ this pass, checked directly against git history and the working tree:
   set system.site page.front to a known node path via drush in the CI job's
   node-creation step, so the front page is deterministic instead of the
   random-hero redirect target. Checked directly against
-  .github/workflows/ci.yml on main (grep for page.front, system.site,
-  config:set): the fix is NOT present. It is still unlanded.
+  .github/workflows/ci.yml on main on 2026-09-09: the fix was not present at
+  that time. Landed the same day on branch fix/vrt-front-page: the
+  node-creation step (renamed "Create a node and set a deterministic front
+  page") now runs `vendor/bin/drush config:set system.site page.front
+  "/node/${node_id}" -y` immediately after creating the node, guarded by the
+  same `[ -n "$node_id" ]` check the step already used, matching the file's
+  existing vendor/bin/drush and -y conventions rather than importing a new
+  form. Applied once, before both scanners run, since axe-core and the VRT
+  spec consume the same scan-urls.json and that list includes "/"
+  unconditionally for every flavour (only /node/... and /search are
+  conditional there); no change to the scan-URL-list step was needed, and
+  there is no per-scanner divergence to reconcile. Side effect: the axe scan
+  had been silently auditing the /user/login redirect target instead of
+  real front-page content, which this also corrects. NEEDS LIVE
+  VERIFICATION regardless: a config change in a workflow file cannot be
+  proven from a local session. Proof required is the same three-part check
+  as the rest of Stage 12: a first CI run generates and commits the Linux
+  baseline, and a second run against it produces a green comparison with no
+  diff on "/".
 - Stage 13, non-interactive init and dynamic token discovery: DONE. Landed
   2026-08-10 (commit 56f50ac, merged via 564d2e1, status corrected in
   fcf3775). Confirmed present in scripts/init.sh: a flag for every prompt,

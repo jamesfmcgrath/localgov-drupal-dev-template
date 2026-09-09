@@ -156,9 +156,24 @@ touched.
   intended fix is to set system.site page.front to a known node path via
   drush in the CI job's node-creation step, so the front page serves
   deterministic content instead of the random-hero login redirect. Checked
-  2026-09-09: this fix is NOT present in .github/workflows/ci.yml on main (no
-  page.front, system.site, or config:set call anywhere in the file); it
-  remains unlanded.
+  2026-09-09: this fix was not present in .github/workflows/ci.yml on main
+  at the time (no page.front, system.site, or config:set call anywhere in
+  the file). Landed 2026-09-09 on branch fix/vrt-front-page: the node-creation
+  step now runs `vendor/bin/drush config:set system.site page.front
+  "/node/${node_id}" -y` right after creating the node, only when a node was
+  actually created (bundles can be empty), matching the existing
+  vendor/bin/drush invocation style and -y usage already in that job. Applies
+  once, ahead of both scanners, since axe-core and the VRT spec share the
+  same scan-urls.json list and that list always includes "/" for every
+  flavour unconditionally (unlike /node/... and /search, which are
+  conditional); there is no per-scanner divergence to account for, and no
+  change was needed to the scan URL list itself. This also incidentally
+  corrects the axe-core scan, which was silently auditing the /user/login
+  redirect target instead of real front-page content. NEEDS LIVE
+  VERIFICATION: this cannot be proven without a real GitHub Actions run.
+  Proof required, same as the rest of Stage 12: a first CI run generates and
+  commits the Linux baseline, and a second run against that baseline
+  produces a green comparison with no diff on "/".
 
 - Stage 13, non-interactive init and dynamic token discovery: DONE (landed
   2026-08-10, commit 56f50ac, merged via 564d2e1, status corrected in
