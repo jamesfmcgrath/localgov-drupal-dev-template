@@ -14,6 +14,21 @@ not yet cut a tagged release (see "Release convention" in
   `add-a-module-later.md`, `add-a-theme.md`, `recipes.md`, and
   `pipeline-parity.md`, `troubleshooting.md`; this `CHANGELOG.md` added
   (Stage 14).
+- `scripts/setup.sh` now prunes upstream scaffold artefacts immediately after
+  the `composer create-project` copy: `.github/workflows/test.yml`,
+  `.gitlab-ci.yml`, `.gitpod.yml`/`.gitpod/`, `.lando.dist.yml`/`.lando/`,
+  `.vscode/`, `README_FRONTEND_TOOLING.md`, and `phpstan-baseline.php`. These
+  land untouched today because `cp -rn` only skips files that collide by
+  name with this template's own; none of them are right for a project built
+  from this template (`.github/workflows/test.yml` in particular can never
+  pass, since it derives its composer ref from the branch name and no
+  `dev-main` version exists). See `SCAFFOLD_PRUNE` in `scripts/setup.sh` for
+  the full list and per-file reasoning.
+  **Existing projects created before this change are not fixed
+  retroactively: `init.sh` deletes itself and `template-docs/` on first run,
+  so there is no update path back to the template. Delete
+  `.github/workflows/test.yml` (and, if present, the other files above) by
+  hand.**
 - Non-interactive `init.sh`: every prompt has a matching flag, plus
   `--defaults` and `--help`; dynamic token discovery replaces a
   hand-maintained substitution list (Stage 13).
@@ -55,6 +70,11 @@ not yet cut a tagged release (see "Release convention" in
 
 ### Changed
 
+- `.github/workflows/ci.yml`: bumped `actions/checkout` v5 to v7,
+  `actions/cache` v5 to v6, `actions/setup-node` v5 to v7, and
+  `actions/upload-artifact` v4 to v7 (current stable majors confirmed against
+  each action's GitHub releases; none of the breaking changes between those
+  majors apply to how this workflow uses them).
 - Claude Code / Cursor reviewer gates upstreamed to the `drupal-agent-resources`
   skill fork, so the tracked `.claude/agents/` copy and the fork stay in
   sync (Stage 1).

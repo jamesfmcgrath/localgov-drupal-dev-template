@@ -103,9 +103,58 @@ success "DDEV running."
 if [ ! -f "composer.json" ]; then
   info "Scaffolding Drupal project: ${COMPOSER_PROJECT}"
   ddev exec "rm -rf /tmp/scaffold && composer create-project ${COMPOSER_PROJECT} /tmp/scaffold --no-install --no-interaction"
-  # cp -n preserves the template's own files (CLAUDE.md, Makefile, scripts, etc.).
+  # cp -rn preserves the template's own files (CLAUDE.md, Makefile, scripts,
+  # etc.) by skipping anything that collides by name; upstream files under a
+  # name this template does not use still land untouched, which is what the
+  # prune list right below cleans up.
   ddev exec "cp -rn /tmp/scaffold/. /var/www/html/ && rm -rf /tmp/scaffold"
   success "Project scaffolded."
+
+  # --- Prune upstream scaffold artefacts ---
+  # localgovdrupal/localgov-project (and the vanilla/cms equivalents) is
+  # scaffolded in wholesale via composer create-project above, including its
+  # own CI and local-dev-environment files. None of this applies to a project
+  # built from this template: CI here is GitHub Actions
+  # (.github/workflows/ci.yml, kept), local dev is DDEV only, and
+  # phpstan.neon scopes to LINT_PATHS rather than the whole web/ tree a
+  # baseline would have been generated against. Keeping the list here, next
+  # to the copy step it cleans up after, is what makes it easy to audit when
+  # the upstream scaffold changes.
+  #   .github/workflows/test.yml - upstream's own GitHub Actions CI. It can
+  #     never pass here: it derives its composer ref from the branch name
+  #     (dev-main on a main branch), which is not a published version.
+  #   .gitlab-ci.yml             - upstream's GitLab CI config; this
+  #     template's own CI is GitHub Actions only.
+  #   .gitpod.yml, .gitpod/      - upstream's cloud dev environment.
+  #   .lando.dist.yml, .lando/   - upstream's alternative local dev
+  #     environment; this template standardises on DDEV.
+  #   .vscode/                  - upstream's editor/xdebug config, half
+  #     wired for Lando, which this template does not use.
+  #   README_FRONTEND_TOOLING.md - documents `lando`/`ddev` custom commands
+  #     (eslint-js, stylelint, install-frontend) this template does not
+  #     define; actively misleading if left in place.
+  #   phpstan-baseline.php      - a baseline for upstream's own unscoped
+  #     phpstan run against the whole web/ tree; not referenced by this
+  #     template's own phpstan.neon, which scopes to LINT_PATHS.
+  info "Pruning upstream scaffold artefacts..."
+  SCAFFOLD_PRUNE=(
+    ".github/workflows/test.yml"
+    ".gitlab-ci.yml"
+    ".gitpod.yml"
+    ".gitpod"
+    ".lando.dist.yml"
+    ".lando"
+    ".vscode"
+    "README_FRONTEND_TOOLING.md"
+    "phpstan-baseline.php"
+  )
+  for path in "${SCAFFOLD_PRUNE[@]}"; do
+    if [ -e "$path" ]; then
+      rm -rf -- "$path"
+      echo "  removed $path"
+    fi
+  done
+  success "Upstream scaffold artefacts pruned."
 fi
 info "Installing Composer dependencies..."
 ddev composer install

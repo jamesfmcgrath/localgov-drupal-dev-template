@@ -76,12 +76,36 @@ it alongside this file when planning work.
   starts DDEV, scaffolds the Drupal project (composer create into a container
   temp dir then cp -rn so template files are not clobbered; corrected
   2026-09-09, this was previously and wrongly described as cp -n, which
-  cannot copy a directory tree on its own), composer install,
-  adds dev tooling (composer require -W, needed since drupal/core-dev does not
-  always resolve cleanly against the vanilla flavour's current lock without
-  it; includes drush/drush since only the LocalGov distribution bundles drush
-  by default), clones the module if a repo URL was given, runs install-drupal,
-  enables the module. Flags: --skip-install, --force-reviewer.
+  cannot copy a directory tree on its own), prunes upstream scaffold
+  artefacts a created project should not inherit (see below), composer
+  install, adds dev tooling (composer require -W, needed since
+  drupal/core-dev does not always resolve cleanly against the vanilla
+  flavour's current lock without it; includes drush/drush since only the
+  LocalGov distribution bundles drush by default), clones the module if a
+  repo URL was given, runs install-drupal, enables the module. Flags:
+  --skip-install, --force-reviewer.
+- Scaffold pruning: cp -rn only skips files that collide by name with this
+  template's own, so anything the upstream flavour project (localgov-project,
+  recommended-project, or cms) ships under a name this template does not use
+  lands untouched. Immediately after the scaffold copy, setup.sh removes a
+  fixed, commented list (SCAFFOLD_PRUNE in setup.sh, the single place to
+  audit or extend it) of upstream CI and local-environment files that can
+  never be right for a project built from this template:
+  .github/workflows/test.yml (upstream's own GitHub Actions CI; derives its
+  composer ref from the branch name, so it can never pass on a project's main
+  branch), .gitlab-ci.yml (this template's CI is GitHub Actions only),
+  .gitpod.yml/.gitpod/ (this template has no cloud-dev-environment story),
+  .lando.dist.yml/.lando/ (this template standardises on DDEV),
+  .vscode/ (upstream's editor/xdebug config, half wired for Lando),
+  README_FRONTEND_TOOLING.md (documents lando/ddev custom commands this
+  template does not define), and phpstan-baseline.php (a baseline for
+  upstream's own unscoped phpstan run, irrelevant to this template's
+  LINT_PATHS-scoped phpstan.neon). Each rm is guarded with `[ -e ... ]` and
+  uses `rm -rf --` on a fixed path, never a glob, so a re-run is a safe
+  no-op and nothing outside the named paths can be reached. Existing
+  projects created before this landed are not fixed retroactively (init.sh
+  has already deleted itself and template-docs/ on those projects); they
+  must delete .github/workflows/test.yml by hand, per CHANGELOG.md.
 - scripts/install-drupal: profile picker (Standard/Umami/LocalGov/+Demo/
   Microsites/+Elections/Drupal CMS starter); accepts a profile arg
   (case-insensitive for "standard", matching init.sh's lowercase
