@@ -74,7 +74,9 @@ it alongside this file when planning work.
   same as TEMPLATE.md.
 - scripts/setup.sh: one-command spin-up. Installs agr skills + drupal-reviewer,
   starts DDEV, scaffolds the Drupal project (composer create into a container
-  temp dir then cp -n so template files are not clobbered), composer install,
+  temp dir then cp -rn so template files are not clobbered; corrected
+  2026-09-09, this was previously and wrongly described as cp -n, which
+  cannot copy a directory tree on its own), composer install,
   adds dev tooling (composer require -W, needed since drupal/core-dev does not
   always resolve cleanly against the vanilla flavour's current lock without
   it; includes drush/drush since only the LocalGov distribution bundles drush
@@ -599,6 +601,60 @@ treated as a fallback for distributions that do not already ship their own
 file, not as a guarantee that Twig debug is on. Vanilla and cms still need a
 live check to confirm the actual behaviour.
 
+Stage 12, visual regression testing (VRT): IMPLEMENTED, NEEDS LIVE
+VERIFICATION (checked against the tree 2026-09-09; see PROMPTS.md and
+memory.md for the full detail). The code landed 2026-08-10 (commit 0b62495,
+merged via fd6273a) and is genuinely in the tree: tests/vrt/vrt.spec.mjs,
+playwright.config.mjs, scan-urls.json, the Makefile's vrt/vrt-update
+targets, and the CI "browser checks" job's VRT step. What has never
+happened: tests/vrt/ has no __screenshots__ directory, no commit has ever
+added one, and the CI job has never run on real GitHub Actions
+infrastructure. The dev-test project used for an earlier local live check
+is being discarded as stale, so that check no longer counts as evidence. A
+future run against a fresh test project has to prove: a first CI run
+generates the missing linux/ baseline and uploads it as an artifact instead
+of failing; that baseline gets committed; a second CI run with the baseline
+present produces a green comparison. Known flake: an anonymous visit to a
+fresh LocalGov install's front page redirects to /user/login, whose
+LocalGov Design System template shows a randomly chosen hero photo per
+request, producing a real pixel diff. Intended fix: set system.site
+page.front to a known node path via drush in the CI job's node-creation
+step. Checked directly against .github/workflows/ci.yml on main: this fix
+is not present; the flake is unlanded and would still reproduce today.
+
+Stage 13, non-interactive init and dynamic token discovery: DONE (commit
+56f50ac, merged via 564d2e1, status corrected in fcf3775). Confirmed
+present in scripts/init.sh by direct reading on 2026-09-09. Needs no live
+DDEV/composer verification, only scripts/test-template.sh, which already
+covers it and passes.
+
+Stage 14, docs split, shipped project docs, changelog: DONE (commit
+ce3b536, a direct commit to main, 2026-08-12). Moved this file, PROMPTS.md,
+and memory.md into template-docs/; added docs/ (getting-started.md,
+add-a-module-later.md, add-a-theme.md, recipes.md, pipeline-parity.md,
+troubleshooting.md) and CHANGELOG.md. Confirmed present in the tree
+2026-09-09. This commit never added its own entry to PROMPTS.md's ledger;
+that gap, and memory.md's silence on Stages 12 through 14, were closed by
+the 2026-09-09 truth pass.
+
+Stage 15: does not exist. No commit, no PROMPTS.md entry, no prompt
+template anywhere in this repo defines one; the numbering stops at Stage
+14. An earlier review session's claim that Stage 15 had landed was wrong,
+not stale.
+
+## Keeping status honest
+
+A 2026-09-09 review found that this repo's own tracking documents
+(PROJECT.md, PROMPTS.md, memory.md) had drifted from the tree and that the
+drift had already caused wrong decisions twice. The rule going forward:
+status claims (landed, partial, blocked, needs verification) are checked
+against git history and the working tree before being written or trusted,
+never carried forward from a previous note, a stale verification project,
+or an external conversation. When the tree and a document disagree, the
+tree wins and the document gets corrected, with the correction stated
+explicitly rather than silently overwritten, so the next reader can see
+what changed and why.
+
 ## Release convention
 
 Tag the template (`v1.0.0` onward, semver) whenever a stage from PROMPTS.md
@@ -609,6 +665,12 @@ the only record a maintainer of an already-created project has to work from;
 they read CHANGELOG.md and apply relevant changes by hand. Move the
 Unreleased entries into a new dated version section when tagging, and start
 a fresh empty Unreleased section above it.
+
+v1.0.0 has not been tagged (checked 2026-09-09 with `git tag -l`). It is
+blocked on Stage 12 (visual regression testing) live verification against a
+fresh test project, since the dev-test project previously used for
+verification is being discarded as stale. The only tag currently in the
+repository is `v-a11y-1`.
 
 ## Start prompt
 

@@ -11,7 +11,7 @@ flavours and supported Drupal versions working; only {{UPPER_SNAKE}} names
 are template tokens and GitHub Actions ${{ }} expressions must never be
 touched.
 
-## Status (2026-08-06)
+## Status (2026-09-09, verified against the tree; entries before Stage 12 are as recorded on their own dates and were not re-audited by this pass)
 
 - Stage 1, reviewer gates upstreamed to the skill fork: DONE
   (jamesfmcgrath/drupal-agent-resources commit 1dc398c; setup.sh fetches from
@@ -118,35 +118,51 @@ touched.
   distributions, including vanilla and cms, do without enabling debug.
   setup.sh now verifies Twig debug directly after the copy step instead of
   assuming it. Vanilla and cms still need a live check.
-- Stage 12, visual regression testing (VRT): DONE (2026-08-10). Reuses the
-  @playwright/test stack the accessibility job already installs rather than
-  adding BackstopJS. a11y-urls.json renamed to scan-urls.json, the one
-  shared URL list for both scanners; its shipped default trimmed to `["/"]`,
-  the only path confirmed to resolve (with or without a redirect) on every
-  flavour straight after install. New tests/vrt/vrt.spec.mjs and a
-  tests/vrt-scoped playwright.config.mjs; new Makefile targets vrt and
-  vrt-update. Baselines are OS-suffixed by directory
-  (tests/vrt/__screenshots__/<platform>/…); only linux/ is authoritative and
-  committed, darwin/ (and win32/) are gitignored. The CI a11y job, renamed
-  "browser checks", now runs the VRT spec after the axe scan against the
-  same served site and shared scan-urls.json: a missing linux/ baseline is
-  generated and uploaded as an artifact rather than failing the run; a
-  genuine diff fails the job and uploads the HTML diff report. scripts/
-  test-template.sh grew assertions that scan-urls.json, playwright.config.mjs,
-  and tests/vrt/vrt.spec.mjs survive init.sh verbatim, plus `make -n vrt`/
-  `vrt-update` parse checks; full suite passes 528/528. Live-verified locally
-  against a throwaway LocalGov 11 site-only install (dev-drupal-11, staged
-  under $HOME per the Colima note above): screenshots generate on the first
-  run, and the comparison correctly fails on a real diff, discovered
-  organically rather than staged, since a fresh install's front page
-  redirects anonymous visitors to /user/login, whose LocalGov Design System
-  template shows a randomly chosen hero photo per request (~25% pixel diff,
-  reproduced twice). Not yet run: the CI job itself on real GitHub Actions
-  infrastructure (only YAML-checked so far), and the authoritative Linux
-  baseline generation/commit, both needing a live GitHub Actions run.
+- Stage 12, visual regression testing (VRT): IMPLEMENTED, NEEDS LIVE
+  VERIFICATION (code landed 2026-08-10, commit 0b62495, merged via fd6273a).
+  Corrected by the 2026-09-09 truth pass: this was previously logged as DONE,
+  but no verification evidence survives it. Reuses the @playwright/test stack
+  the accessibility job already installs rather than adding BackstopJS.
+  a11y-urls.json renamed to scan-urls.json, the one shared URL list for both
+  scanners; its shipped default trimmed to `["/"]`, the only path confirmed to
+  resolve (with or without a redirect) on every flavour straight after
+  install. tests/vrt/vrt.spec.mjs and a tests/vrt-scoped playwright.config.mjs
+  exist in the tree; Makefile targets vrt and vrt-update exist. Baselines are
+  meant to be OS-suffixed by directory (tests/vrt/__screenshots__/<platform>/…),
+  only linux/ authoritative and committed, darwin/ (and win32/) gitignored;
+  the CI "browser checks" job runs the VRT spec after the axe scan against the
+  served site and shared scan-urls.json, generating and uploading a missing
+  linux/ baseline as an artifact rather than failing the run, and failing the
+  job with an uploaded HTML diff report on a genuine diff. scripts/
+  test-template.sh asserts that scan-urls.json, playwright.config.mjs, and
+  tests/vrt/vrt.spec.mjs survive init.sh verbatim, plus `make -n vrt`/
+  `vrt-update` parse checks.
+  What the tree actually shows, checked 2026-09-09: tests/vrt/ contains only
+  vrt.spec.mjs, no __screenshots__ directory of any kind, and no commit in
+  this repo's history has ever added one. The CI job has never run on real
+  GitHub Actions infrastructure. The dev-test project used for an earlier
+  local live check (screenshots generated, comparison correctly failed on a
+  real diff) is being abandoned as stale, so that check no longer counts as
+  evidence; nothing currently survives to verify this stage against.
+  What a future verification run has to prove, against a fresh test project:
+  (1) a first CI run with no linux/ baseline generates one and uploads it as
+  an artifact instead of failing; (2) that baseline gets committed to the
+  repository; (3) a second CI run, with the baseline present, produces a
+  green comparison (no diff) against the same pages.
+  Known flake and its intended fix: a fresh LocalGov install's front page
+  redirects anonymous visitors to /user/login, and the LocalGov Design System
+  login template shows a randomly chosen hero photo per request (~25% pixel
+  diff, reproduced twice in the earlier, now-discarded local check). The
+  intended fix is to set system.site page.front to a known node path via
+  drush in the CI job's node-creation step, so the front page serves
+  deterministic content instead of the random-hero login redirect. Checked
+  2026-09-09: this fix is NOT present in .github/workflows/ci.yml on main (no
+  page.front, system.site, or config:set call anywhere in the file); it
+  remains unlanded.
 
-- Stage 13, non-interactive init and dynamic token discovery: DONE
-  (2026-08-10). init.sh gained a flag for every prompt (--module,
+- Stage 13, non-interactive init and dynamic token discovery: DONE (landed
+  2026-08-10, commit 56f50ac, merged via 564d2e1, status corrected in
+  fcf3775). init.sh gained a flag for every prompt (--module,
   --module-label, --module-path, --module-repo, --theme, --theme-label,
   --ddev-name, --ddev-url, --client, --skill-fork, --flavour, --version) plus
   --defaults and --help; anything not given as a flag is still prompted, and
@@ -163,9 +179,30 @@ touched.
   through flags with stdin closed, except one combo (localgov 11, module +
   theme) that keeps the interactive init_input path covered, and one that
   injects a new {{CLIENT}}-bearing file into the copy before init.sh to prove
-  discovery. Suite grew from 528 to 697 checks, all passing; the failure path
-  was proven by breaking the --client mapping on purpose (the --client
-  assertions and the discovery check fail, suite exits 1) and restoring it.
+  discovery. Suite grew from 528 to 697 checks at the time this landed, all
+  passing; the failure path was proven by breaking the --client mapping on
+  purpose (the --client assertions and the discovery check fail, suite exits
+  1) and restoring it. This stage needs no live DDEV/composer verification:
+  it is tokeniser-level only, and scripts/test-template.sh already covers it
+  without touching the network. Confirmed still fully present in the tree by
+  the 2026-09-09 truth pass.
+
+- Stage 14, docs split, shipped project docs, changelog: DONE (landed
+  2026-08-12, commit ce3b536, direct to main). Moved PROJECT.md, PROMPTS.md,
+  and memory.md from the repo root into template-docs/; added docs/
+  (getting-started.md, add-a-module-later.md, add-a-theme.md, recipes.md,
+  pipeline-parity.md, troubleshooting.md) and CHANGELOG.md at the repo root.
+  Confirmed present in the tree by the 2026-09-09 truth pass. Gap found by
+  that pass: commit ce3b536 never added its own entry to this ledger, which
+  is why this entry did not exist until now, and memory.md was never updated
+  to mention it either (fixed in the same pass).
+
+- Stage 15: does not exist. Checked 2026-09-09: no commit in this repo's
+  history (`git log --all --grep`) mentions Stage 15, this ledger has never
+  had a Stage 15 entry, and no prompt template for one exists below. It was
+  never a planned batch here, not merely unlanded; a review session's
+  reference to a landed Stage 15 was wrong, not stale, and is corrected here
+  rather than carried forward.
 
 ---
 

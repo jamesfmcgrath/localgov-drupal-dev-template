@@ -9,11 +9,20 @@ not yet cut a tagged release (see "Release convention" in
 
 ### Added
 
+- Documentation split: `PROJECT.md`, `PROMPTS.md`, and `memory.md` moved
+  into `template-docs/`; `docs/` gained `getting-started.md`,
+  `add-a-module-later.md`, `add-a-theme.md`, `recipes.md`, and
+  `pipeline-parity.md`, `troubleshooting.md`; this `CHANGELOG.md` added
+  (Stage 14).
 - Non-interactive `init.sh`: every prompt has a matching flag, plus
   `--defaults` and `--help`; dynamic token discovery replaces a
   hand-maintained substitution list (Stage 13).
 - Visual regression testing via Playwright (`make vrt`, `make vrt-update`),
-  reusing the accessibility job's browser install (Stage 12).
+  reusing the accessibility job's browser install (Stage 12). Implemented,
+  needs live verification: no Linux baseline has ever been generated or
+  committed, and the CI job has never run on real GitHub Actions
+  infrastructure; see `template-docs/PROMPTS.md` for what a verification
+  run has to prove.
 - `recipes/dev_tools` and `recipes/site_tools`, `make recipe`, and local dev
   settings templates (`assets/settings.local.php`,
   `assets/development.services.yml`) applied automatically by `setup.sh`
