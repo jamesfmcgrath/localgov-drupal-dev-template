@@ -118,62 +118,55 @@ touched.
   distributions, including vanilla and cms, do without enabling debug.
   setup.sh now verifies Twig debug directly after the copy step instead of
   assuming it. Vanilla and cms still need a live check.
-- Stage 12, visual regression testing (VRT): IMPLEMENTED, NEEDS LIVE
-  VERIFICATION (code landed 2026-08-10, commit 0b62495, merged via fd6273a).
-  Corrected by the 2026-09-09 truth pass: this was previously logged as DONE,
-  but no verification evidence survives it. Reuses the @playwright/test stack
-  the accessibility job already installs rather than adding BackstopJS.
-  a11y-urls.json renamed to scan-urls.json, the one shared URL list for both
-  scanners; its shipped default trimmed to `["/"]`, the only path confirmed to
-  resolve (with or without a redirect) on every flavour straight after
-  install. tests/vrt/vrt.spec.mjs and a tests/vrt-scoped playwright.config.mjs
-  exist in the tree; Makefile targets vrt and vrt-update exist. Baselines are
-  meant to be OS-suffixed by directory (tests/vrt/__screenshots__/<platform>/…),
-  only linux/ authoritative and committed, darwin/ (and win32/) gitignored;
-  the CI "browser checks" job runs the VRT spec after the axe scan against the
+- Stage 12, visual regression testing (VRT): VERIFIED (2026-09-09). Code
+  landed 2026-08-10, commit 0b62495, merged via fd6273a; the front-page
+  determinism fix landed 2026-09-09 on branch fix/vrt-front-page (PR #5,
+  merged via e6fdfbd). Reuses the @playwright/test stack the accessibility
+  job already installs rather than adding BackstopJS. a11y-urls.json
+  renamed to scan-urls.json, the one shared URL list for both scanners; its
+  shipped default trimmed to `["/"]`, the only path confirmed to resolve
+  (with or without a redirect) on every flavour straight after install.
+  tests/vrt/vrt.spec.mjs and a tests/vrt-scoped playwright.config.mjs exist
+  in the tree; Makefile targets vrt and vrt-update exist. Baselines are
+  OS-suffixed by directory (tests/vrt/__screenshots__/<platform>/…), only
+  linux/ authoritative and committed, darwin/ (and win32/) gitignored; the
+  CI "browser checks" job runs the VRT spec after the axe scan against the
   served site and shared scan-urls.json, generating and uploading a missing
-  linux/ baseline as an artifact rather than failing the run, and failing the
-  job with an uploaded HTML diff report on a genuine diff. scripts/
-  test-template.sh asserts that scan-urls.json, playwright.config.mjs, and
-  tests/vrt/vrt.spec.mjs survive init.sh verbatim, plus `make -n vrt`/
-  `vrt-update` parse checks.
-  What the tree actually shows, checked 2026-09-09: tests/vrt/ contains only
-  vrt.spec.mjs, no __screenshots__ directory of any kind, and no commit in
-  this repo's history has ever added one. The CI job has never run on real
-  GitHub Actions infrastructure. The dev-test project used for an earlier
-  local live check (screenshots generated, comparison correctly failed on a
-  real diff) is being abandoned as stale, so that check no longer counts as
-  evidence; nothing currently survives to verify this stage against.
-  What a future verification run has to prove, against a fresh test project:
-  (1) a first CI run with no linux/ baseline generates one and uploads it as
-  an artifact instead of failing; (2) that baseline gets committed to the
-  repository; (3) a second CI run, with the baseline present, produces a
-  green comparison (no diff) against the same pages.
-  Known flake and its intended fix: a fresh LocalGov install's front page
-  redirects anonymous visitors to /user/login, and the LocalGov Design System
-  login template shows a randomly chosen hero photo per request (~25% pixel
-  diff, reproduced twice in the earlier, now-discarded local check). The
-  intended fix is to set system.site page.front to a known node path via
-  drush in the CI job's node-creation step, so the front page serves
-  deterministic content instead of the random-hero login redirect. Checked
-  2026-09-09: this fix was not present in .github/workflows/ci.yml on main
-  at the time (no page.front, system.site, or config:set call anywhere in
-  the file). Landed 2026-09-09 on branch fix/vrt-front-page: the node-creation
-  step now runs `vendor/bin/drush config:set system.site page.front
-  "/node/${node_id}" -y` right after creating the node, only when a node was
-  actually created (bundles can be empty), matching the existing
-  vendor/bin/drush invocation style and -y usage already in that job. Applies
-  once, ahead of both scanners, since axe-core and the VRT spec share the
-  same scan-urls.json list and that list always includes "/" for every
-  flavour unconditionally (unlike /node/... and /search, which are
-  conditional); there is no per-scanner divergence to account for, and no
-  change was needed to the scan URL list itself. This also incidentally
-  corrects the axe-core scan, which was silently auditing the /user/login
-  redirect target instead of real front-page content. NEEDS LIVE
-  VERIFICATION: this cannot be proven without a real GitHub Actions run.
-  Proof required, same as the rest of Stage 12: a first CI run generates and
-  commits the Linux baseline, and a second run against that baseline
-  produces a green comparison with no diff on "/".
+  linux/ baseline as an artifact rather than failing the run, and failing
+  the job with an uploaded HTML diff report on a genuine diff.
+  The front-page determinism fix: a fresh LocalGov install's front page
+  redirects anonymous visitors to /user/login, and the LocalGov Design
+  System login template shows a randomly chosen hero photo per request
+  (~25% pixel diff, reproduced twice in an earlier, now-discarded local
+  check). Fix: the node-creation step now runs `vendor/bin/drush config:set
+  system.site page.front "/node/${node_id}" -y` right after creating the
+  node, only when a node was actually created, matching the existing
+  vendor/bin/drush invocation style and -y usage already in that job. This
+  also incidentally corrects the axe-core scan, which had been silently
+  auditing the /user/login redirect target instead of real front-page
+  content.
+  Live-verified 2026-09-09 against a fresh test project
+  (github.com/jamesfmcgrath/lgd-stage12-verify-20260909-215334, localgov,
+  Drupal 11, module and theme both configured), not the discarded dev-test
+  project. Observed directly from the job logs: PR #5's Actions run on the
+  bare template correctly SKIPPED php/prettier/browser-checks (no
+  composer.json yet, so this is not evidence of the fix working) with no
+  action-resolution failures from the bumped majors (checkout v7, cache v6,
+  setup-node v7, upload-artifact v7) in the jobs that did run. After
+  `init.sh`/`setup.sh` scaffolded and installed the fresh project and it was
+  pushed (composer.json now present), the guard flipped and
+  browser-checks ran for real: it created node 1, set
+  `system.site page.front` to `/node/1` (confirmed in the log), axe-core
+  scanned 2 pages ("/" and "/node/1") with 0 violations (real front-page
+  content, not the login redirect), and the VRT spec found no
+  tests/vrt/__screenshots__/linux/ baseline, generated front-page.png and
+  node-1.png, and uploaded them as build artifact vrt-baselines-linux
+  instead of failing the run. Those PNGs were downloaded with
+  `gh run download` and committed to the project repo; a no-op commit then
+  triggered a second run whose browser-checks log reads "Committed Linux
+  baselines found; comparing against them." followed by "2 passed" — a
+  genuine green comparison against the committed baseline. Both runs
+  passed on the first attempt.
 
 - Stage 13, non-interactive init and dynamic token discovery: DONE (landed
   2026-08-10, commit 56f50ac, merged via 564d2e1, status corrected in

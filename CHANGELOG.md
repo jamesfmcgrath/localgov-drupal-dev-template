@@ -1,14 +1,22 @@
 # Changelog
 
 All notable changes to this template are documented here. Format follows
-[Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project has
-not yet cut a tagged release (see "Release convention" in
-`template-docs/PROJECT.md`), so everything so far sits under Unreleased.
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+## [1.0.0] - 2026-09-09
+
 ### Added
 
+- Front page determinism fix for the "browser checks" CI job: the
+  node-creation step now sets `system.site page.front` to the created
+  node's path via drush, so both the axe-core scan and the VRT spec see
+  real front-page content instead of LocalGov's anonymous `/user/login`
+  redirect (whose randomly-chosen hero photo per request had also been
+  producing a ~25% VRT pixel diff). This also corrects the axe-core scan,
+  which had been silently auditing the login page rather than the front
+  page. Live-verified against a fresh test project (see Stage 12 below).
 - Documentation split: `PROJECT.md`, `PROMPTS.md`, and `memory.md` moved
   into `template-docs/`; `docs/` gained `getting-started.md`,
   `add-a-module-later.md`, `add-a-theme.md`, `recipes.md`, and
@@ -29,15 +37,18 @@ not yet cut a tagged release (see "Release convention" in
   so there is no update path back to the template. Delete
   `.github/workflows/test.yml` (and, if present, the other files above) by
   hand.**
+  Live-verified with a full site install (not just `--skip-install`)
+  against a fresh test project: all nine paths absent after `setup.sh`,
+  and this template's own `ci.yml` survived with its tokens substituted.
 - Non-interactive `init.sh`: every prompt has a matching flag, plus
   `--defaults` and `--help`; dynamic token discovery replaces a
   hand-maintained substitution list (Stage 13).
 - Visual regression testing via Playwright (`make vrt`, `make vrt-update`),
-  reusing the accessibility job's browser install (Stage 12). Implemented,
-  needs live verification: no Linux baseline has ever been generated or
-  committed, and the CI job has never run on real GitHub Actions
-  infrastructure; see `template-docs/PROMPTS.md` for what a verification
-  run has to prove.
+  reusing the accessibility job's browser install (Stage 12). Live-verified
+  end to end against a fresh test project: a first CI run with no Linux
+  baseline generated and uploaded one as a build artifact, that baseline
+  was committed, and a second run against it produced a green comparison
+  with no diff; see `template-docs/PROMPTS.md` for the full observation.
 - `recipes/dev_tools` and `recipes/site_tools`, `make recipe`, and local dev
   settings templates (`assets/settings.local.php`,
   `assets/development.services.yml`) applied automatically by `setup.sh`

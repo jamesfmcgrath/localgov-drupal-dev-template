@@ -690,11 +690,11 @@ they read CHANGELOG.md and apply relevant changes by hand. Move the
 Unreleased entries into a new dated version section when tagging, and start
 a fresh empty Unreleased section above it.
 
-v1.0.0 has not been tagged (checked 2026-09-09 with `git tag -l`). It is
-blocked on Stage 12 (visual regression testing) live verification against a
-fresh test project, since the dev-test project previously used for
-verification is being discarded as stale. The only tag currently in the
-repository is `v-a11y-1`.
+v1.0.0 tagged 2026-09-09, once Stage 12 (visual regression testing) live
+verification passed against a fresh test project
+(lgd-stage12-verify-20260909-215334), replacing the discarded dev-test
+project as evidence. See template-docs/memory.md and PROMPTS.md for the
+full observation. The only other tag in the repository is `v-a11y-1`.
 
 ## Start prompt
 
