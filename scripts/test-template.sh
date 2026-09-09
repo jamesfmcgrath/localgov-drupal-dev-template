@@ -221,6 +221,16 @@ assert_common() { # assert_common <dir> <label>
     fail "$label: assets/module.gitlab-ci.yml changed or missing after init.sh"
   fi
 
+  # setup.sh's scaffold-prune list holds no {{TOKENS}} either, so it must
+  # survive init.sh verbatim (a stray substitution could silently narrow or
+  # widen what a fresh project prunes from the upstream scaffold).
+  prune_block() { sed -n '/^  SCAFFOLD_PRUNE=($/,/^  )$/p' "$1"; }
+  if diff -q <(prune_block "$REPO_ROOT/scripts/setup.sh") <(prune_block "$dir/scripts/setup.sh") >/dev/null 2>&1; then
+    pass "$label: setup.sh SCAFFOLD_PRUNE list survives init.sh verbatim"
+  else
+    fail "$label: setup.sh SCAFFOLD_PRUNE list changed after init.sh"
+  fi
+
   # recipes/, the local dev settings templates, and the VRT/scan-urls files
   # hold no {{TOKENS}} either, so they must survive init.sh verbatim too.
   for f in recipes/dev_tools/recipe.yml recipes/site_tools/recipe.yml \

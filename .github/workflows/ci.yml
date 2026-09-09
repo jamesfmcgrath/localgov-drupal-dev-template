@@ -28,7 +28,7 @@ jobs:
     outputs:
       run: ${{ steps.check.outputs.run }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - id: check
         run: |
           if [ -f composer.json ]; then
@@ -47,7 +47,7 @@ jobs:
     if: needs.guard.outputs.run == 'false'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - run: ./scripts/test-template.sh
 
   php:
@@ -59,7 +59,7 @@ jobs:
       # The custom code workspace. Keep in step with LINT_PATHS in the Makefile.
       LINT_PATHS: web/modules/custom web/themes/custom
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -70,7 +70,7 @@ jobs:
           tools: composer:v2
 
       - name: Cache Composer packages
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ~/.cache/composer
           key: composer-${{ hashFiles('composer.lock') }}
@@ -144,7 +144,7 @@ jobs:
 
       - name: Set up Node
         if: steps.frontend_check.outputs.found == 'true'
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
 
@@ -191,8 +191,8 @@ jobs:
       # The custom code workspace. Keep in step with LINT_PATHS in the Makefile.
       LINT_PATHS: web/modules/custom web/themes/custom
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '20'
       - run: npm install --no-audit --no-fund
@@ -233,7 +233,7 @@ jobs:
     if: needs.guard.outputs.run == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -244,7 +244,7 @@ jobs:
           tools: composer:v2
 
       - name: Cache Composer packages
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ~/.cache/composer
           key: composer-${{ hashFiles('composer.lock') }}
@@ -337,7 +337,7 @@ jobs:
           printf '%s\n' "$urls" > scan-urls.json
           echo "Scan URLs: $urls"
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: '20'
 
@@ -363,7 +363,7 @@ jobs:
 
       - name: Upload generated VRT baselines
         if: steps.vrt.outputs.baselines_generated == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: vrt-baselines-linux
           path: tests/vrt/__screenshots__/linux/
@@ -371,7 +371,7 @@ jobs:
 
       - name: Upload VRT diff report
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: vrt-report
           path: playwright-report/
