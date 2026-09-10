@@ -111,7 +111,7 @@ if [ ! -f "composer.json" ]; then
   success "Project scaffolded."
 
   # --- Prune upstream scaffold artefacts ---
-  # localgovdrupal/localgov-project (and the vanilla/cms equivalents) is
+  # drupal/localgov_project (and the vanilla/cms equivalents) is
   # scaffolded in wholesale via composer create-project above, including its
   # own CI and local-dev-environment files. None of this applies to a project
   # built from this template: CI here is GitHub Actions

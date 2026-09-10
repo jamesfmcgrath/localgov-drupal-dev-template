@@ -716,6 +716,16 @@ tree wins and the document gets corrected, with the correction stated
 explicitly rather than silently overwritten, so the next reader can see
 what changed and why.
 
+## Source of truth for working notes
+
+template-docs/ is the single source of truth for working notes, roadmaps,
+and stage records. Notes kept outside this tree, including a claude.ai
+Project's knowledge base, are not authoritative and are not to be cited as
+evidence for a status claim: the "Keeping status honest" rule above cannot
+reach a document it cannot check against the tree. Anything from a session
+worth keeping lands under template-docs/ in the same commit as the work it
+describes, not filed later from memory.
+
 ## Release convention
 
 Tag the template (`v1.0.0` onward, semver) whenever a stage from PROMPTS.md
