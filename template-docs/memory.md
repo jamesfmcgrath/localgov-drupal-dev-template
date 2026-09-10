@@ -1,12 +1,15 @@
 # Project memory: localgov-drupal-dev-template
 
-Last updated: 2026-09-09 (truth pass against the tree, then same-day Stage 12
-live verification against a fresh test project). The previous version was
-dated 2026-08-06 and was silent on Stages 12 through 14, which had already
-landed on main by then; this rewrite verifies every stage-status claim
-against git history and the working tree rather than carrying forward
-unverified prior notes. See template-docs/PROJECT.md's "Keeping status
-honest" section for the rule this pass follows.
+Last updated: 2026-09-10 (closed two loose ends left open by the 2026-09-09
+pass, then re-checked two carried-forward notes against the tree before
+deciding whether to write them up as a new stage). The 2026-09-09 pass was a
+truth pass against the tree, done the same day as Stage 12 live verification
+against a fresh test project; the version before that was dated 2026-08-06
+and was silent on Stages 12 through 14, which had already landed on main by
+then. Every stage-status claim in this file is checked against git history
+and the working tree before being written, never carried forward unverified.
+See template-docs/PROJECT.md's "Keeping status honest" section for the rule
+this pass follows.
 
 ## What this is
 
@@ -26,6 +29,18 @@ staged improvement prompts and their status live in PROMPTS.md.
   entry, no prompt template. An earlier review session's note that Stage 15
   had landed was wrong, not stale. There is nothing to mark as landed,
   partial, or even planned; the numbering simply stops at Stage 14.
+- A 2026-09-10 session was asked to write a new stage for two items carried
+  as notes since before Stage 12 (make subtheme live proof on vanilla/cms,
+  and the make stan spurious exit 1), both originally scoped into the same
+  phantom Stage 15 above. Checked against the tree first, per the rule this
+  file follows: both were already resolved in the 2026-08-10 cleanup batch
+  (commit f035cd0), and neither the Makefile nor phpstan.neon has changed
+  since (`git log f035cd0..HEAD -- Makefile phpstan.neon` returns nothing).
+  No new stage was created; writing one for already-resolved work would have
+  repeated the exact stale-note error this section exists to correct.
+  PROMPTS.md's Stage 10 entry, which still read "still open" for both, is
+  corrected to match. The next unused stage number is still 15; nothing has
+  claimed it.
 - The axe-core accessibility scan was, until the 2026-09-09 fix landed,
   silently auditing `/user/login` rather than the front page on every fresh
   LocalGov install, because of LocalGov's anonymous-visitor redirect off
@@ -184,6 +199,46 @@ scaffold prune and the VRT baseline round-trip) passed against
 lgd-stage12-verify-20260909-215334. Release notes drawn from CHANGELOG.md's
 former Unreleased section, now moved under the `[1.0.0]` heading. The only
 other tag in the repository is `v-a11y-1` (confirmed with `git tag -l`).
+
+Test project disposition (decided 2026-09-10): jamesfmcgrath/lgd-stage12-verify-20260909-215334
+is KEPT as the standing verification project, not deleted. Created
+2026-09-09T20:53:37Z per `gh repo view` (confirmed live, not from memory),
+from the template at commit e6fdfbd (the PR #5 merge), functionally
+identical to the a4200ed tag commit, which only added documentation
+(confirmed with `git show --stat a4200ed`: CHANGELOG.md and template-docs/
+only). It is the sole artifact evidence behind the v1.0.0 tag: the committed
+Linux VRT baselines, both browser-checks run logs, and the scaffold-prune
+check all live only in that project's history. Deleting it would leave those
+claims with no reproducible evidence, unlike the earlier dev-test project,
+which really was disposable and cost nothing to discard once its findings
+were folded into this file.
+
+What it has proven, and on what date:
+- 2026-09-09: the Stage 12 VRT round-trip (missing-baseline generation and
+  artifact upload on the first real run, committed baseline, genuine green
+  comparison on the second run) and the nine-artefact SCAFFOLD_PRUNE check,
+  both against a real localgov/Drupal 11/module+theme site install. See the
+  Stage 12 entry above.
+- 2026-09-10: confirmed directly from the actual GitHub Actions job logs
+  (`gh api .../actions/jobs/<id>/logs`, not inferred from the browser-checks
+  job passing) that the PHP and Prettier jobs ran for real in the two pushes
+  after the guard flipped (runs 34404280850 and 34404569476), and that
+  actions/checkout@v7, actions/cache@v6, and actions/setup-node@v7 each
+  resolved with a valid SHA and zero `##[warning]` lines in both job logs;
+  actions/upload-artifact@v7 is not invoked in either job (confirmed by
+  grep) and was separately confirmed clean in the browser-checks job logs of
+  the same two runs. This closes the 2026-09-09 note's gap: browser-checks
+  passing alone did not establish this for PHP and Prettier, and now the
+  actual per-job logs do.
+
+Evidence expiry: this project proves the template as it stood at
+e6fdfbd/a4200ed (v1.0.0). Any future claim resting on it (the VRT
+round-trip, the scaffold prune, the four action-version bumps) must be
+re-verified against a fresh spin-up if setup.sh, .github/workflows/ci.yml,
+tests/vrt/vrt.spec.mjs, or scripts/a11y-scan.mjs change after that commit.
+Do not cite this project's history as current evidence for a changed
+template, the way the earlier discarded dev-test project's stale evidence
+was wrongly cited twice in the 2026-09-09 session.
 
 ## Conventions (hard rules)
 

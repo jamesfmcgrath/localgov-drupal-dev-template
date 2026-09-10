@@ -666,6 +666,33 @@ template anywhere in this repo defines one; the numbering stops at Stage
 14. An earlier review session's claim that Stage 15 had landed was wrong,
 not stale.
 
+2026-09-10 verification pass: closed two loose ends and re-checked two
+carried-forward notes against the tree before writing them up as a new
+stage. First, a correction: the "Still not run live" line after the
+2026-08-06 Stage 10 live verification above, the "Remaining open work"
+paragraph naming make subtheme on vanilla and cms, and the "narrowed but
+not fixed" make stan paragraph are all superseded by the 2026-08-10
+Cleanup batch entries earlier in this section, which already record both
+as RESOLVED and live-verified; they were left standing in place after that
+fix landed, so this note closes the gap rather than leaving two
+contradictory claims for a future reader to reconcile alone. Re-checked
+2026-09-10: neither the Makefile nor phpstan.neon has changed since commit
+f035cd0, so both fixes still hold. Second, the test project used for Stage
+12's live verification, lgd-stage12-verify-20260909-215334, is being kept
+rather than deleted, since it is the only artifact evidence behind the
+v1.0.0 tag (committed VRT baselines, both browser-checks run logs, the
+scaffold-prune check); full detail and its evidence-expiry caveat are in
+template-docs/memory.md. Third, a fresh check of the actual GitHub Actions
+job logs in that project (not just the browser-checks job passing)
+confirmed the PHP and Prettier jobs ran for real after the guard flipped
+and that checkout v7, cache v6, setup-node v7, and upload-artifact v7 all
+resolved without warnings in every job that uses them; see PROMPTS.md's
+Stage 12 entry for the log-level detail. No new stage was created for the
+two carried-forward items (make subtheme live proof, make stan spurious
+exit): both were already resolved, and writing a stage for resolved work
+would repeat the exact stale-note error this file's "Keeping status
+honest" rule exists to prevent.
+
 ## Keeping status honest
 
 A 2026-09-09 review found that this repo's own tracking documents

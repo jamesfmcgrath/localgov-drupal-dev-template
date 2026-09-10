@@ -11,7 +11,7 @@ flavours and supported Drupal versions working; only {{UPPER_SNAKE}} names
 are template tokens and GitHub Actions ${{ }} expressions must never be
 touched.
 
-## Status (2026-09-09, verified against the tree; entries before Stage 12 are as recorded on their own dates and were not re-audited by this pass)
+## Status (2026-09-10, closing two loose ends and re-verifying two carried-forward items against the tree; entries before Stage 12 are as recorded on their own dates and were not re-audited by this pass)
 
 - Stage 1, reviewer gates upstreamed to the skill fork: DONE
   (jamesfmcgrath/drupal-agent-resources commit 1dc398c; setup.sh fetches from
@@ -84,10 +84,18 @@ touched.
   the theme). Two changes closed during that audit: make component now
   pre-fills the generator's first three answers, the --answer ordering having
   been confirmed live, and make spell gained --no-must-find-files to match CI
-  and package.json. Still open: make subtheme on the vanilla and cms branches
-  (core's generate-theme call), and make check going green end to end, which
-  is blocked by the pre-existing make stan ddev-exec exit-code caveat and by
-  subtheme vocabulary missing from .cspell-project-words.txt. See PROJECT.md
+  and package.json. Two follow-up items from that audit, make subtheme on
+  the vanilla and cms branches and the make stan ddev-exec exit-code
+  caveat, were RESOLVED in the 2026-08-10 cleanup batch (commit f035cd0):
+  make subtheme now prefers `vendor/bin/dr generate-theme`, live-verified on
+  a throwaway vanilla 11 project (cms was not spun up separately since it
+  shares the same Makefile branch); phpstan.neon's duplicate phpstan-drupal
+  includes and stale `drupalRoot` key were removed, live-verified
+  deterministically (exit 0 clean, exit 1 with a real error shown) on both a
+  vanilla and a theme-only localgov project. make subtheme also now appends
+  generic subtheme vocabulary to .cspell-project-words.txt automatically.
+  Both fixes confirmed unchanged in the tree on 2026-09-10 (`git log
+  f035cd0..HEAD -- Makefile phpstan.neon` returns nothing). See PROJECT.md
   for the measurements.
 - Stage 11, local dev recipes: DONE (2026-08-06). recipes/site_tools and
   recipes/dev_tools, assets/settings.local.php and
@@ -167,6 +175,16 @@ touched.
   baselines found; comparing against them." followed by "2 passed" — a
   genuine green comparison against the committed baseline. Both runs
   passed on the first attempt.
+  The PHP lint/static-analysis/tests and Prettier jobs also ran for real in
+  both of those pushed runs (job list confirmed via `gh run view --json
+  jobs`, not inferred from browser-checks passing): a 2026-09-10 check of
+  the actual per-job logs (`gh api .../actions/jobs/<id>/logs`) found
+  actions/checkout@v7, actions/cache@v6, and actions/setup-node@v7 each
+  resolving with a valid SHA and zero `##[warning]` lines in both jobs;
+  actions/upload-artifact@v7 is not invoked in either job and was confirmed
+  clean separately in the browser-checks job logs of the same two runs.
+  This closes the gap left by the 2026-09-09 observation above, which only
+  covered the jobs skipped on the bare-template PR run.
 
 - Stage 13, non-interactive init and dynamic token discovery: DONE (landed
   2026-08-10, commit 56f50ac, merged via 564d2e1, status corrected in
@@ -211,6 +229,17 @@ touched.
   never a planned batch here, not merely unlanded; a review session's
   reference to a landed Stage 15 was wrong, not stale, and is corrected here
   rather than carried forward.
+  A 2026-09-10 session was asked to write a genuine stage for two items that
+  had been carried as notes since before Stage 12 and originally scoped
+  into this same phantom Stage 15: make subtheme live proof on vanilla and
+  cms, and the make stan spurious exit 1. Checked against the tree first:
+  both were already resolved in the 2026-08-10 cleanup batch (commit
+  f035cd0, see the corrected Stage 10 entry above), and neither the
+  Makefile nor phpstan.neon has changed since. No new stage was written;
+  doing so would have re-created a stage for work that was already done,
+  the same category of error this entry exists to prevent. The numbering
+  still stops at Stage 14; 15 remains the next unused number, free for the
+  next stage that is actually new.
 
 ---
 
