@@ -693,6 +693,16 @@ exit): both were already resolved, and writing a stage for resolved work
 would repeat the exact stale-note error this file's "Keeping status
 honest" rule exists to prevent.
 
+## Open items
+
+- Possible internal documentation task: a document explaining this repo's
+  own token grammar ({{UPPER_SNAKE}} substitution, how init.sh discovers and
+  resolves tokens), the script contract between init.sh and setup.sh, and
+  the CI guard inversion (the template job runs when the bare-template
+  guard check is false, the opposite of every other job), written for
+  someone reading this template cold. Not started; no such file exists in
+  the tree yet.
+
 ## Keeping status honest
 
 A 2026-09-09 review found that this repo's own tracking documents

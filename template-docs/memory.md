@@ -19,6 +19,10 @@ Create a project from it, run ./scripts/init.sh (tokeniser), then
 LocalGov Drupal site ready to code in. Full detail lives in PROJECT.md;
 staged improvement prompts and their status live in PROMPTS.md.
 
+## Decisions
+
+- 2026-09-09: the Astro sibling diverged into its own repo and Claude Project; the shared-contract approach between the two templates was dropped, and this repo is now maintained independently.
+
 ## Corrections (previous notes that were wrong, not merely stale)
 
 - setup.sh has always scaffolded with `cp -rn` (recursive, no-clobber), not
